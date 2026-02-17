@@ -1,0 +1,100 @@
+{
+  "app": {
+    "name": "Smart Paste Hub",
+    "tagline": "Clipboard Formatter untuk Profesional"
+  },
+  "tray": {
+    "preset": "Preset Aktif",
+    "multiClipboard": "Multi-Clipboard",
+    "pasteQueue": "Antrian Paste",
+    "settings": "Pengaturan",
+    "history": "Riwayat",
+    "snippets": "Snippet",
+    "quit": "Keluar"
+  },
+  "settings": {
+    "title": "Pengaturan",
+    "hotkeys": {
+      "title": "Konfigurasi Hotkey",
+      "pasteClean": "Paste Bersih",
+      "ocrCapture": "Tangkap OCR",
+      "multiCopy": "Multi-Copy",
+      "queueToggle": "Toggle Antrian"
+    },
+    "presets": {
+      "title": "Preset Aktif",
+      "plainText": "Teks Polos (strip semua)",
+      "keepStructure": "Pertahankan Struktur",
+      "addNew": "Tambah Preset Baru"
+    },
+    "security": {
+      "title": "Keamanan",
+      "detectSensitive": "Deteksi data sensitif",
+      "autoClear": "Auto-hapus clipboard",
+      "timer": "Timer"
+    }
+  },
+  "history": {
+    "title": "Riwayat Clipboard",
+    "search": "Cari riwayat...",
+    "filter": {
+      "all": "Semua",
+      "today": "Hari ini",
+      "thisWeek": "Minggu ini"
+    },
+    "actions": {
+      "copy": "Salin",
+      "pin": "Sematkan",
+      "delete": "Hapus"
+    },
+    "showing": "Menampilkan {start}-{end} dari {total}"
+  },
+  "toast": {
+    "cleaned": "Teks dibersihkan & siap di-paste",
+    "piiDetected": "Data sensitif terdeteksi!",
+    "ocrDone": "OCR: {count} karakter dikenali",
+    "syncNew": "Item baru dari {device}",
+    "maskAll": "Mask Semua",
+    "maskPartial": "Mask Sebagian",
+    "ignore": "Abaikan"
+  },
+  "template": {
+    "title": "Template Manager",
+    "create": "Buat Template Baru",
+    "variables": "Variabel",
+    "save": "Simpan",
+    "preview": "Pratinjau"
+  },
+  "sync": {
+    "status": "Status Koneksi",
+    "connected": "Terhubung",
+    "disconnected": "Terputus",
+    "pairing": "Pindai QR Code",
+    "device": "Perangkat"
+  },
+  "errors": {
+    "cleaningFailed": "Gagal membersihkan teks. Teks asli akan digunakan.",
+    "detectionFailed": "Jenis konten tidak dikenali. Menggunakan preset default.",
+    "ocrFailed": "OCR gagal mengenali teks. Coba area yang lebih jelas.",
+    "syncFailed": "Koneksi sync terputus. Mencoba ulang...",
+    "storageFailed": "Gagal menyimpan data. Periksa ruang disk.",
+    "pluginFailed": "Plugin \"{name}\" error dan dinonaktifkan."
+  },
+  "onboarding": {
+    "welcome": "Selamat Datang di Smart Paste Hub!",
+    "setupHotkeys": "Atur Hotkey",
+    "choosePreset": "Pilih Preset Default",
+    "securityOptions": "Opsi Keamanan",
+    "tryDemo": "Coba Demo: Paste Clean",
+    "done": "Setup Selesai!",
+    "upgradeNow": "Upgrade Sekarang",
+    "maybeLater": "Nanti Saja"
+  },
+  "pricing": {
+    "free": "Gratis",
+    "pro": "Pro",
+    "ultimate": "Ultimate",
+    "perMonth": "/bulan",
+    "lifetime": "Seumur Hidup"
+  }
+}

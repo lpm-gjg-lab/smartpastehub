@@ -1,0 +1,54 @@
+{
+  "app": {
+    "name": "Smart Paste Hub",
+    "tagline": "Clipboard Formatter for Professionals"
+  },
+  "tray": {
+    "preset": "Active Preset",
+    "multiClipboard": "Multi-Clipboard",
+    "pasteQueue": "Paste Queue",
+    "settings": "Settings",
+    "history": "History",
+    "snippets": "Snippets",
+    "quit": "Quit"
+  },
+  "settings": {
+    "title": "Settings",
+    "hotkeys": {
+      "title": "Hotkey Configuration",
+      "pasteClean": "Paste Clean",
+      "ocrCapture": "OCR Capture",
+      "multiCopy": "Multi-Copy",
+      "queueToggle": "Queue Toggle"
+    },
+    "presets": {
+      "title": "Active Preset",
+      "plainText": "Plain Text (strip all)",
+      "keepStructure": "Keep Structure",
+      "addNew": "Add New Preset"
+    },
+    "security": {
+      "title": "Security",
+      "detectSensitive": "Detect sensitive data",
+      "autoClear": "Auto-clear clipboard",
+      "timer": "Timer"
+    }
+  },
+  "toast": {
+    "cleaned": "Text cleaned & ready to paste",
+    "piiDetected": "Sensitive data detected!",
+    "ocrDone": "OCR: {count} characters recognized",
+    "syncNew": "New item from {device}",
+    "maskAll": "Mask All",
+    "maskPartial": "Mask Partial",
+    "ignore": "Ignore"
+  },
+  "errors": {
+    "cleaningFailed": "Failed to clean text. Original text will be used.",
+    "detectionFailed": "Content type not recognized. Using default preset.",
+    "ocrFailed": "OCR failed to recognize text. Try a clearer area.",
+    "syncFailed": "Sync connection lost. Retrying...",
+    "storageFailed": "Failed to save data. Check disk space.",
+    "pluginFailed": "Plugin \"{name}\" crashed and has been disabled."
+  }
+}
