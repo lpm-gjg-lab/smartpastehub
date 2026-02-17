@@ -1,0 +1,9 @@
+{
+  "name": "com.smartpastehub.host",
+  "description": "Smart Paste Hub Native Messaging Host",
+  "path": "C:\\Program Files\\SmartPasteHub\\native-host.exe",
+  "type": "stdio",
+  "allowed_origins": [
+    "chrome-extension://EXTENSION_ID_HERE/"
+  ]
+}

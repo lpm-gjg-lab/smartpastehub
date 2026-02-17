@@ -1,0 +1,26 @@
+.popup {
+  font-family: Inter, sans-serif;
+  padding: 12px;
+  width: 260px;
+}
+
+.status {
+  background: #e7f7ee;
+  padding: 8px;
+  border-radius: 6px;
+  margin-bottom: 8px;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.link {
+  background: none;
+  border: none;
+  color: #6c63ff;
+  cursor: pointer;
+}

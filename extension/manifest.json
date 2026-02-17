@@ -1,0 +1,19 @@
+{
+  "manifest_version": 3,
+  "name": "Smart Paste Hub",
+  "version": "0.1.0",
+  "description": "Clipboard formatter bridge",
+  "action": {
+    "default_popup": "popup/popup.html"
+  },
+  "permissions": ["clipboardRead", "clipboardWrite", "nativeMessaging"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content-script.js"]
+    }
+  ]
+}
