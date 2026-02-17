@@ -1,0 +1,56 @@
+appId: com.smartpastehub.app
+productName: Smart Paste Hub
+copyright: Copyright © 2026 Smart Paste Hub
+
+directories:
+  output: release
+  buildResources: assets
+
+files:
+  - dist/**/*
+  - package.json
+
+win:
+  target:
+    - target: nsis
+      arch: [x64, arm64]
+    - target: portable
+  icon: assets/icons/icon.ico
+  artifactName: SmartPasteHub-${version}-${arch}.${ext}
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  installerIcon: assets/icons/icon.ico
+  uninstallerIcon: assets/icons/icon.ico
+
+mac:
+  target:
+    - target: dmg
+      arch: [x64, arm64]
+    - target: zip
+  icon: assets/icons/icon.icns
+  category: public.app-category.utilities
+  hardenedRuntime: true
+  entitlements: build/entitlements.mac.plist
+  notarize: true
+
+linux:
+  target:
+    - AppImage
+    - deb
+    - rpm
+  icon: assets/icons
+  category: Utility
+  desktop:
+    StartupWMClass: SmartPasteHub
+
+publish:
+  provider: github
+  owner: smartpastehub
+  repo: smartpastehub
+
+autoUpdate:
+  enabled: true
+  channel: latest
