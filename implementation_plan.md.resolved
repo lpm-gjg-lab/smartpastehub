@@ -1,0 +1,703 @@
+# 📋 Smart Paste Hub — Rencana Implementasi
+
+## Deskripsi Proyek
+
+**Smart Paste Hub** adalah alat clipboard formatter terpadu yang menyelesaikan masalah umum copy-paste: format berantakan, line break pecah dari PDF, tabel yang rusak, dan styling yang tidak diinginkan. Alat ini mengintegrasikan beberapa fitur yang biasanya tersebar di tools terpisah ke dalam satu workflow seamless.
+
+### Masalah yang Diselesaikan
+
+| Masalah | Contoh |
+|---------|--------|
+| Format berantakan saat paste | Paste dari Google Docs ke InDesign membawa font/warna yang tidak diinginkan |
+| Line break pecah dari PDF | Setiap baris di PDF menjadi paragraf baru saat di-paste |
+| Tabel rusak saat copy | Tabel dari Excel/web kehilangan struktur saat di-paste ke editor teks |
+| Proses manual lambat | Harus paste ke Notepad dulu, baru copy lagi — membuang waktu |
+
+### Keunggulan vs Kompetitor
+
+| Fitur | CleanBoard | PureText | TableToMarkdown | **Smart Paste Hub** |
+|-------|:----------:|:--------:|:---------------:|:-------------------:|
+| Strip format | ✅ | ✅ | ❌ | ✅ |
+| Fix PDF line breaks | ❌ | ❌ | ❌ | ✅ |
+| Konversi tabel | ❌ | ❌ | ✅ | ✅ |
+| Browser extension | ❌ | ❌ | ❌ | ✅ |
+| Custom presets | ❌ | ❌ | ❌ | ✅ |
+| Clipboard history | ❌ | ❌ | ❌ | ✅ |
+| Multi-clipboard merge | ❌ | ❌ | ❌ | ✅ |
+| Sensitive data masker | ❌ | ❌ | ❌ | ✅ |
+| JSON/YAML/TOML converter | ❌ | ❌ | ❌ | ✅ |
+| AI smart detection | ❌ | ❌ | ❌ | ✅ |
+| OCR paste | ❌ | ❌ | ❌ | ✅ |
+| Cross-device sync | ❌ | ❌ | ❌ | ✅ |
+
+---
+
+## Arsitektur Teknis
+
+```mermaid
+graph TD
+    subgraph "Input Sources"
+        A["📄 PDF / Word / Email"]
+        B["🌐 Browser (Web/Docs)"]
+        C["📊 Spreadsheet / Tabel"]
+        D2["🖼️ Screenshot / Gambar"]
+        D3["📱 Perangkat Lain"]
+    end
+
+    subgraph "Smart Paste Hub Core"
+        D["🔍 Clipboard Watcher"]
+        E["⚙️ Cleaning Engine"]
+        F["📐 Table Detector"]
+        G["🧠 Smart Line-Break Fixer"]
+        H["💾 History Manager"]
+        I2["🔄 Format Converter"]
+        I3["🛡️ Security Module"]
+        I4["🤖 AI Engine"]
+        I5["👁️ OCR Engine"]
+        I6["📋 Multi-Clipboard Queue"]
+    end
+
+    subgraph "Output"
+        I["📝 Plain Text"]
+        J["📑 Structured Text"]
+        K["📊 Markdown Table"]
+        L["🔧 JSON / YAML / TOML"]
+        M["🎨 Syntax Highlighted Code"]
+    end
+
+    A --> D
+    B --> D
+    C --> D
+    D2 --> I5
+    D3 --> D
+    D --> E
+    D --> I3
+    E --> F
+    E --> G
+    E --> I2
+    E --> I4
+    I5 --> E
+    D --> I6
+    F --> K
+    G --> I
+    G --> J
+    I2 --> L
+    I2 --> M
+    E --> H
+```
+
+### Komponen Utama
+
+1. **Desktop Agent** — Aplikasi native ringan yang berjalan di system tray
+   - Clipboard watcher (monitor perubahan clipboard)
+   - Global hotkey handler (`Ctrl+Alt+V`)
+   - Cleaning engine (logika pembersihan format)
+   - Settings UI (konfigurasi preset)
+
+2. **Browser Extension** — Chrome/Firefox extension
+   - Content script untuk menangkap copy events
+   - Popup UI untuk quick settings
+   - Native messaging bridge ke desktop agent
+
+3. **Cleaning Engine** — Core logic
+   - HTML/CSS stripper (hapus font, warna, inline styles)
+   - Smart line-break fixer (gabung baris pecah dari PDF)
+   - Table detector & converter (TSV/HTML → Markdown/plain text)
+   - Whitespace normalizer
+
+4. **Security Module** — Keamanan & privasi
+   - Sensitive data masker (email, nomor HP, NIK, kartu kredit)
+   - Auto-clear clipboard (hapus setelah X detik)
+
+5. **Format Converter** — Konversi antar format data
+   - JSON ↔ YAML ↔ TOML converter
+   - Markdown ↔ Rich Text converter
+   - Code syntax highlighter
+
+6. **Multi-Clipboard Queue** — Productivity
+   - Multi-clipboard merge (gabung beberapa copy)
+   - Paste queue (antrian paste berurutan)
+   - Template paste (paste dengan variabel)
+
+7. **AI Engine** — Kecerdasan buatan
+   - Smart format detection (deteksi jenis konten otomatis)
+   - AI rewrite on paste (rapikan grammar/kalimat)
+
+8. **OCR Engine** — Optical Character Recognition
+   - Screenshot → teks via OCR
+   - Integrasi dengan clipboard watcher
+
+9. **Cross-Device Sync** — Sinkronisasi
+   - End-to-end encrypted clipboard sync
+   - PC ↔ HP via cloud relay
+
+---
+
+## Teknologi yang Digunakan
+
+### Opsi 1: Electron (Cross-Platform) — ⭐ Direkomendasikan untuk MVP
+
+| Komponen | Teknologi |
+|----------|-----------|
+| Desktop App | **Electron** + TypeScript |
+| UI Framework | **React** + CSS Modules |
+| Clipboard API | `electron.clipboard` (native) |
+| Global Hotkey | `electron.globalShortcut` |
+| Build & Package | `electron-builder` |
+| Browser Extension | Chrome Extension Manifest V3 |
+| Native Messaging | Chrome Native Messaging Protocol |
+
+> [!TIP]
+> Electron dipilih untuk MVP karena satu codebase bisa berjalan di Windows, macOS, dan Linux. Meskipun lebih berat dari native app, kecepatan development jauh lebih tinggi.
+
+### Opsi 2: Native per Platform (Produk Matang)
+
+| Platform | Teknologi |
+|----------|-----------|
+| Windows | C# / WPF atau Go + WinAPI |
+| macOS | Swift + AppKit |
+| Linux | Go + GTK |
+
+> [!NOTE]
+> Opsi native bisa dipertimbangkan di fase lanjutan jika performa dan ukuran aplikasi menjadi prioritas utama.
+
+---
+
+## Pembagian Fase & Roadmap
+
+### 🚀 Fase 1: MVP — Core Cleaning & Security (Minggu 1–5)
+
+**Target:** Aplikasi desktop yang bisa membersihkan format clipboard via hotkey + fitur keamanan dasar.
+
+#### Fitur Inti
+
+- [ ] **Plain Text Preset** — Strip semua styling (font, warna, ukuran) dari clipboard
+- [ ] **Keep Structure Preset** — Hapus styling tapi pertahankan bold/italic/list/link
+- [ ] **Smart Hotkey** — `Ctrl+Alt+V` untuk paste bersih (Windows), `⌘+⇧+V` (Mac)
+- [ ] **PDF Line-Break Fixer** — Deteksi dan gabungkan line break artifisial dari PDF
+  - Heuristik: panjang baris, tanda baca akhir, huruf kapital awal
+- [ ] **System Tray Integration** — Ikon tray dengan menu konteks
+- [ ] **Settings UI** — Panel pengaturan sederhana untuk preset dan hotkey
+
+#### 🛡️ Fitur Keamanan (Baru)
+
+- [ ] **Sensitive Data Masker** — Deteksi otomatis data sensitif di clipboard dan tawarkan masking
+  - Email, nomor HP, NIK, nomor kartu kredit (regex-based detection)
+  - Opsi: mask penuh (`****`), mask partial (`08***456`), atau skip
+- [ ] **Auto-Clear Clipboard** — Hapus clipboard otomatis setelah timer
+  - Konfigurasi: 30 detik / 1 menit / 5 menit / custom
+  - Sangat berguna saat copy password
+
+#### Deliverables Fase 1
+
+```
+smartpastehub/
+├── package.json
+├── electron-builder.yml
+├── src/
+│   ├── main/                    # Electron main process
+│   │   ├── index.ts             # Entry point
+│   │   ├── clipboard-watcher.ts # Monitor clipboard changes
+│   │   ├── hotkey-manager.ts    # Global shortcut registration
+│   │   ├── tray-manager.ts      # System tray icon & menu
+│   │   └── ipc-handlers.ts      # IPC communication
+│   ├── renderer/                # Electron renderer (UI)
+│   │   ├── App.tsx              # Root component
+│   │   ├── pages/
+│   │   │   └── Settings.tsx     # Settings page
+│   │   ├── components/
+│   │   │   ├── PresetSelector.tsx
+│   │   │   └── HotkeyConfig.tsx
+│   │   └── styles/
+│   │       └── index.css
+│   ├── core/                    # Cleaning engine (shared)
+│   │   ├── cleaner.ts           # Main cleaning orchestrator
+│   │   ├── html-stripper.ts     # Strip HTML/CSS formatting
+│   │   ├── line-break-fixer.ts  # Smart PDF line-break merge
+│   │   ├── whitespace-normalizer.ts
+│   │   └── presets.ts           # Preset definitions
+│   ├── security/                # Security module (BARU)
+│   │   ├── sensitive-detector.ts # Detect PII via regex
+│   │   ├── data-masker.ts       # Mask sensitive data
+│   │   └── auto-clear.ts       # Auto-clear clipboard timer
+│   └── shared/
+│       └── types.ts             # Shared TypeScript types
+├── tests/
+│   ├── core/
+│   │   ├── cleaner.test.ts
+│   │   ├── html-stripper.test.ts
+│   │   └── line-break-fixer.test.ts
+│   ├── security/
+│   │   ├── sensitive-detector.test.ts
+│   │   └── data-masker.test.ts
+│   └── fixtures/
+│       ├── pdf-sample.txt
+│       ├── html-styled.html
+│       └── table-sample.tsv
+└── README.md
+```
+
+---
+
+### 📊 Fase 2: Table, Format Conversion & Productivity (Minggu 6–10)
+
+**Target:** Auto-deteksi tabel, konversi format data, dan fitur produktivitas lanjutan.
+
+#### Fitur Tabel & Context
+
+- [ ] **Table Auto-Detect** — Deteksi HTML `<table>`, TSV, dan CSV di clipboard
+- [ ] **Table → Markdown Converter** — Konversi tabel ke format Markdown
+- [ ] **Table → Plain Text Aligner** — Konversi tabel ke teks rata kolom
+- [ ] **Context Rules Engine** — Aturan preset per aplikasi sumber/target
+  - Contoh: copy dari Adobe Reader → otomatis gunakan PDF fixer
+  - Contoh: paste ke VS Code → format sebagai Markdown
+- [ ] **Browser Extension v1** — Chrome extension untuk paste bersih di web
+
+#### 🔄 Fitur Format Conversion (Baru)
+
+- [ ] **JSON ↔ YAML ↔ TOML Converter** — Otomatis konversi antar format data saat paste
+  - Deteksi format sumber otomatis
+  - User pilih format target via hotkey atau menu
+- [ ] **Code Syntax Highlighter** — Paste kode ke email/Docs dengan syntax highlighting
+  - Rich text output dengan warna syntax
+  - Support 20+ bahasa pemrograman populer
+- [ ] **Markdown ↔ Rich Text** — Konversi dua arah antara Markdown dan rich text
+  - Paste Markdown ke Word/Docs → jadi rich text
+  - Paste rich text ke VS Code → jadi Markdown
+
+#### ⚡ Fitur Productivity (Baru)
+
+- [ ] **Multi-Clipboard Merge** — Copy beberapa item berurutan, paste sekaligus
+  - `Ctrl+C` beberapa kali → `Ctrl+Alt+V` paste semua digabung
+  - Opsi separator: newline, koma, spasi, custom
+- [ ] **Paste Queue** — Antrian paste FIFO
+  - Copy N item, lalu setiap `Ctrl+Alt+V` paste item berikutnya
+  - Indicator di tray: "3 item tersisa"
+- [ ] **Regex Transform Rules** — Aturan regex kustom untuk transformasi teks
+  - Contoh: hapus semua URL, format nomor telepon, remove emoji
+  - Preset bawaan + user bisa tambah custom rules
+
+#### Tambahan Struktur
+
+```
+src/
+├── core/
+│   ├── table-detector.ts        # Detect table content
+│   ├── table-converter.ts       # Convert to Markdown/plain
+│   ├── context-rules.ts         # Source/target routing
+│   └── regex-transformer.ts     # Custom regex rules (BARU)
+├── converter/                   # Format converters (BARU)
+│   ├── json-yaml-toml.ts        # JSON ↔ YAML ↔ TOML
+│   ├── markdown-richtext.ts     # Markdown ↔ Rich Text
+│   └── syntax-highlighter.ts    # Code → highlighted rich text
+├── productivity/                # Productivity features (BARU)
+│   ├── multi-clipboard.ts       # Multi-clipboard merge
+│   ├── paste-queue.ts           # FIFO paste queue
+│   └── template-engine.ts       # Template paste
+├── extension/                   # Browser Extension
+│   ├── manifest.json
+│   ├── background.ts
+│   ├── content-script.ts
+│   ├── popup/
+│   │   ├── popup.html
+│   │   └── popup.ts
+│   └── native-messaging/
+│       └── host-config.json
+```
+
+---
+
+### 🏆 Fase 3: History, Snippets & Monetisasi (Minggu 11–14)
+
+**Target:** History, snippets, template paste, multi-browser support, dan model freemium.
+
+#### Fitur
+
+- [ ] **Clipboard History** — Riwayat 20–100 item terakhir yang bisa dicari
+- [ ] **Pinned Snippets** — Simpan dan beri tag snippet favorit
+- [ ] **Template Paste** — Template dengan variabel yang diisi otomatis
+  - Contoh: "Halo {nama}, terima kasih atas pesanan #{order_id}"
+  - Variabel diisi dari clipboard atau input user
+- [ ] **Firefox Extension** — Port extension ke Firefox
+- [ ] **Auto-update System** — Mekanisme update otomatis
+- [ ] **Freemium Gate** — Batasi fitur gratis (misal: 5000 karakter/hari)
+- [ ] **License/Subscription System** — Integrasi pembayaran sederhana
+- [ ] **Onboarding Flow** — Tutorial interaktif saat pertama kali buka
+
+#### Tambahan Struktur
+
+```
+src/
+├── core/
+│   ├── history-manager.ts     # Clipboard history
+│   └── snippet-store.ts       # Pinned snippets
+├── renderer/
+│   ├── pages/
+│   │   ├── History.tsx        # History browser UI
+│   │   ├── Snippets.tsx       # Snippet manager UI
+│   │   └── Templates.tsx      # Template manager UI (BARU)
+│   └── components/
+│       ├── HistoryList.tsx
+│       ├── SnippetCard.tsx
+│       ├── TemplateEditor.tsx # Template editor (BARU)
+│       └── UsageMeter.tsx     # Free tier usage display
+```
+
+---
+
+### 🤖 Fase 4: AI & OCR (Minggu 15–18) — BARU
+
+**Target:** Fitur cerdas berbasis AI dan OCR untuk pengalaman paste yang lebih pintar.
+
+#### 🧠 Fitur AI-Powered
+
+- [ ] **Smart Format Detection** — AI mendeteksi jenis konten secara otomatis
+  - Deteksi: kode, email, alamat, JSON, daftar, tabel, prosa
+  - Otomatis pilih preset terbaik tanpa intervensi user
+  - Menggunakan lightweight ML model (lokal, tanpa API)
+- [ ] **AI Rewrite on Paste** — Opsi rapikan grammar/kalimat saat paste
+  - Berguna untuk teks OCR, terjemahan kasar, atau draft email
+  - Opsi: fix grammar only, rephrase, summarize
+  - Menggunakan local LLM (Ollama) atau API opsional (OpenAI/Gemini)
+
+#### 👁️ Fitur OCR
+
+- [ ] **OCR Paste** — Screenshot area layar → otomatis OCR → teks bersih ke clipboard
+  - Hotkey: `Ctrl+Alt+S` untuk screenshot-to-text
+  - Menggunakan Tesseract.js (lokal, tanpa API)
+  - Support bahasa: Indonesia, Inggris, + konfigurasi tambahan
+  - Post-processing: auto-clean OCR artifacts
+
+#### Tambahan Struktur
+
+```
+src/
+├── ai/                          # AI Engine (BARU)
+│   ├── format-detector.ts       # Smart content detection
+│   ├── ai-rewriter.ts           # Grammar fix / rewrite
+│   └── model-manager.ts         # Local model management
+├── ocr/                         # OCR Engine (BARU)
+│   ├── screen-capture.ts        # Screenshot region selector
+│   ├── ocr-engine.ts            # Tesseract.js wrapper
+│   └── ocr-post-processor.ts    # Clean OCR output
+├── renderer/
+│   ├── pages/
+│   │   └── AISettings.tsx       # AI/OCR settings page
+│   └── components/
+│       ├── OCRPreview.tsx        # Preview OCR result
+│       └── RewritePreview.tsx   # Preview AI rewrite
+```
+
+> [!NOTE]
+> Fitur AI bisa berjalan 100% lokal menggunakan Ollama + model kecil (seperti Phi-3 atau Gemma 2B). API cloud (OpenAI/Gemini) ditawarkan sebagai opsi untuk hasil lebih baik.
+
+---
+
+### 🌐 Fase 5: Cross-Device & Ekosistem (Minggu 19–22) — BARU
+
+**Target:** Sinkronisasi antar perangkat dan ekspansi ekosistem.
+
+#### Fitur
+
+- [ ] **Cross-Device Clipboard Sync** — Sinkronisasi clipboard PC ↔ HP
+  - End-to-end encryption (AES-256)
+  - Pairing via QR code
+  - Cloud relay server (minimal, hanya untuk routing)
+  - Mobile companion app (React Native)
+- [ ] **Linux Support** — Full support untuk Linux (X11 + Wayland)
+- [ ] **Plugin System** — Arsitektur plugin agar komunitas bisa extend
+  - Plugin API + dokumentasi
+  - Plugin marketplace (sederhana)
+- [ ] **Integrasi Ekosistem** — Plugin untuk apps populer
+  - Obsidian plugin
+  - Notion integration
+  - VS Code extension
+
+#### Tambahan Struktur
+
+```
+src/
+├── sync/                        # Cross-Device Sync (BARU)
+│   ├── sync-manager.ts          # Sync orchestrator
+│   ├── encryption.ts            # E2E encryption (AES-256)
+│   ├── pairing.ts               # QR code device pairing
+│   └── relay-client.ts          # Cloud relay communication
+├── plugins/                     # Plugin System (BARU)
+│   ├── plugin-api.ts            # Plugin API interface
+│   ├── plugin-loader.ts         # Dynamic plugin loader
+│   └── plugin-store.ts          # Plugin marketplace
+mobile/                          # Mobile Companion App (BARU)
+├── package.json
+├── App.tsx
+└── src/
+    ├── screens/
+    │   └── ClipboardSync.tsx
+    └── services/
+        └── sync-service.ts
+```
+
+> [!WARNING]
+> Cross-device sync memerlukan backend server (minimal relay). Ini satu-satunya fitur yang membutuhkan infrastruktur cloud. Pertimbangkan biaya operasional sebelum implementasi.
+
+---
+
+## Strategi Pricing
+
+### Model Freemium
+
+```mermaid
+graph LR
+    A["🆓 Free Tier"] --> B["⭐ Pro Tier"] --> C["💎 Ultimate Tier"]
+    
+    A --- A1["Plain text cleaning"]
+    A --- A2["5.000 karakter/hari"]
+    A --- A3["1 preset aktif"]
+    A --- A4["Auto-clear clipboard"]
+    
+    B --- B1["Semua fitur Fase 1-3"]
+    B --- B2["Unlimited usage"]
+    B --- B3["Custom presets & rules"]
+    B --- B4["History, Snippets, Templates"]
+    B --- B5["Format converters"]
+    B --- B6["Multi-clipboard & Queue"]
+    
+    C --- C1["AI features"]
+    C --- C2["OCR paste"]
+    C --- C3["Cross-device sync"]
+    C --- C4["Plugin system"]
+```
+
+### Opsi Harga
+
+| Model | Harga | Fitur | Target |
+|-------|-------|-------|--------|
+| **Free** | Rp 0 | Core cleaning + auto-clear | Pengguna kasual |
+| **Pro (Lifetime)** | Rp 150.000 – 250.000 (~$10–15) | Semua fitur Fase 1–3 | Power user, mahasiswa |
+| **Pro (Bulanan)** | Rp 15.000 – 45.000 (~$1–3/bulan) | Semua fitur Fase 1–3 | Profesional |
+| **Ultimate (Lifetime)** | Rp 350.000 – 500.000 (~$22–30) | Pro + AI + OCR + Sync | Enterprise, heavy user |
+| **Ultimate (Bulanan)** | Rp 50.000 – 75.000 (~$3–5/bulan) | Pro + AI + OCR + Sync | Tim & perusahaan |
+
+> [!IMPORTANT]
+> Harga lifetime direkomendasikan sebagai opsi utama. Ultimate tier mungkin perlu subscription karena cross-device sync memerlukan biaya server.
+
+---
+
+## Target Pengguna & Go-to-Market
+
+### Segmen Utama
+
+1. **Developer & Technical Writer** — Sering copy-paste kode dan dokumentasi
+2. **Akademisi & Peneliti** — Sering copy dari PDF jurnal
+3. **Content Creator** — Copy dari berbagai sumber ke CMS
+4. **Pekerja Kantoran** — Copy-paste antara email, Word, dan aplikasi lain
+
+### Strategi Peluncuran
+
+| Channel | Tindakan |
+|---------|----------|
+| **Chrome Web Store** | Publish extension gratis |
+| **GitHub** | Open source core engine untuk komunitas |
+| **Reddit** | Post di r/productivity, r/programming, r/academiaya |
+| **Product Hunt** | Launch day dengan demo video |
+| **Blog/SEO** | Artikel: "cara fix copy paste formatting", "convert tabel ke markdown" |
+| **Partnership** | Integrasi dengan Notion, Obsidian plugin directory |
+
+---
+
+## Estimasi Timeline
+
+```mermaid
+gantt
+    title Smart Paste Hub — Roadmap (5 Fase, ~22 Minggu)
+    dateFormat  YYYY-MM-DD
+    
+    section Fase 1: MVP + Security
+    Setup project & tooling       :a1, 2026-02-23, 3d
+    Cleaning engine core          :a2, after a1, 5d
+    Hotkey & clipboard watcher    :a3, after a1, 4d
+    PDF line-break fixer          :a4, after a2, 4d
+    Sensitive data masker         :a7, after a2, 3d
+    Auto-clear clipboard          :a8, after a7, 2d
+    Desktop UI settings & tray    :a5, after a3, 5d
+    Testing & bug fixing          :a6, after a8, 4d
+    
+    section Fase 2: Tables, Converters & Productivity
+    Table detector & converter    :b1, after a6, 5d
+    JSON YAML TOML converter      :b6, after a6, 4d
+    Markdown Rich Text converter  :b7, after b6, 3d
+    Code syntax highlighter       :b8, after b7, 3d
+    Multi-clipboard merge         :b9, after b1, 3d
+    Paste queue                   :b10, after b9, 2d
+    Regex transform rules         :b11, after b10, 3d
+    Context rules engine          :b2, after b1, 4d
+    Chrome Extension v1           :b3, after a6, 7d
+    Native messaging bridge       :b4, after b3, 3d
+    Integration testing           :b5, after b11, 4d
+    
+    section Fase 3: History, Templates & Monetisasi
+    History & snippets            :c1, after b5, 5d
+    Template paste engine         :c6, after c1, 4d
+    Freemium gate                 :c2, after c6, 3d
+    Firefox extension             :c3, after b5, 5d
+    Onboarding & polish           :c4, after c2, 4d
+    Release v1.0                  :c5, after c4, 3d
+    
+    section Fase 4: AI & OCR
+    Smart format detection AI     :d1, after c5, 5d
+    AI rewrite on paste           :d2, after d1, 5d
+    OCR engine integration        :d3, after c5, 5d
+    Screen capture to text        :d4, after d3, 3d
+    AI & OCR testing              :d5, after d2, 4d
+    
+    section Fase 5: Cross-Device & Ekosistem
+    E2E encryption & pairing     :e1, after d5, 4d
+    Cloud relay server            :e2, after e1, 5d
+    Mobile companion app          :e3, after e2, 7d
+    Plugin system                 :e4, after d5, 5d
+    Ecosystem integrations        :e5, after e4, 4d
+    Final QA & release v2.0       :e6, after e3, 3d
+```
+
+---
+
+## Rencana Verifikasi
+
+### Unit Test (Otomatis)
+
+| Test Suite | Fase | Deskripsi |
+|------------|------|-----------|
+| `cleaner.test.ts` | 1 | Test cleaning orchestrator dengan berbagai input |
+| `html-stripper.test.ts` | 1 | Test strip HTML styling, keep structure |
+| `line-break-fixer.test.ts` | 1 | Test merge PDF line breaks, heuristik |
+| `sensitive-detector.test.ts` | 1 | Test deteksi email, HP, NIK, kartu kredit |
+| `data-masker.test.ts` | 1 | Test masking penuh, partial, dan skip |
+| `table-detector.test.ts` | 2 | Test deteksi HTML table / TSV / CSV |
+| `table-converter.test.ts` | 2 | Test konversi ke Markdown / plain text |
+| `json-yaml-toml.test.ts` | 2 | Test konversi antar format data |
+| `markdown-richtext.test.ts` | 2 | Test konversi Markdown ↔ Rich Text |
+| `multi-clipboard.test.ts` | 2 | Test merge multiple clipboard items |
+| `paste-queue.test.ts` | 2 | Test FIFO paste queue |
+| `regex-transformer.test.ts` | 2 | Test custom regex transform rules |
+| `template-engine.test.ts` | 3 | Test template variable substitution |
+| `format-detector.test.ts` | 4 | Test AI content type detection |
+| `ocr-engine.test.ts` | 4 | Test OCR accuracy berbagai bahasa |
+| `encryption.test.ts` | 5 | Test E2E encryption roundtrip |
+
+**Cara menjalankan semua test:**
+```bash
+npm test
+```
+
+### Test Fixture / Data Uji
+
+| File | Isi |
+|------|-----|
+| `fixtures/pdf-sample.txt` | Teks dari PDF dengan line break pecah |
+| `fixtures/html-styled.html` | HTML dengan inline styles, font tags, warna |
+| `fixtures/table-sample.tsv` | Data TSV dari spreadsheet |
+| `fixtures/table-sample.html` | HTML `<table>` element lengkap |
+| `fixtures/sensitive-data.txt` | Teks mengandung email, HP, NIK, kartu kredit |
+| `fixtures/sample.json` | JSON valid untuk test konversi |
+| `fixtures/sample.yaml` | YAML valid untuk test konversi |
+| `fixtures/code-samples/` | Kode berbagai bahasa untuk syntax highlight |
+| `fixtures/ocr-images/` | Gambar teks untuk test OCR |
+
+### Manual Testing (Oleh User)
+
+1. **Test Strip Format:**
+   - Copy teks berwarna/bergaya dari Google Docs
+   - Tekan `Ctrl+Alt+V` di Notepad → pastikan teks bersih tanpa format
+
+2. **Test PDF Fix:**
+   - Copy paragraf dari file PDF (yang line break-nya pecah)
+   - Tekan `Ctrl+Alt+V` → pastikan paragraf tergabung rapi
+
+3. **Test Tabel:**
+   - Copy tabel dari Excel atau halaman web
+   - Tekan `Ctrl+Alt+V` di VS Code → pastikan muncul sebagai Markdown table
+
+4. **Test System Tray:**
+   - Pastikan ikon muncul di system tray
+   - Klik kanan → pastikan menu preset & settings muncul
+
+5. **Test Sensitive Data Masker:**
+   - Copy teks berisi nomor HP/email/NIK
+   - Pastikan notifikasi muncul menawarkan opsi masking
+   - Verifikasi data termasking dengan benar
+
+6. **Test Auto-Clear:**
+   - Copy password, set timer 30 detik
+   - Tunggu 30 detik → coba paste → pastikan clipboard kosong
+
+7. **Test Multi-Clipboard Merge:**
+   - Copy 3 potongan teks berbeda berturut-turut
+   - Tekan `Ctrl+Alt+V` → pastikan ketiga teks digabung
+
+8. **Test JSON ↔ YAML:**
+   - Copy JSON dari API response
+   - Paste sebagai YAML → verifikasi format benar
+
+9. **Test OCR Paste:**
+   - Tekan `Ctrl+Alt+S`, pilih area screenshot
+   - Pastikan teks dari gambar masuk clipboard dengan benar
+
+10. **Test Cross-Device Sync:**
+    - Pair HP dengan PC via QR code
+    - Copy di PC → pastikan muncul di HP, dan sebaliknya
+
+> [!NOTE]
+> Manual testing sangat penting untuk memvalidasi heuristik PDF line-break fixer dan akurasi OCR. Disarankan menguji dengan minimal 5 PDF berbeda dan 10 gambar teks berbeda.
+
+---
+
+## Catatan Penting
+
+> [!WARNING]
+> **Keterbatasan teknis yang perlu diperhatikan:**
+> - Windows tidak memiliki "paste hook" global — harus menggunakan clipboard watcher saat copy atau custom hotkey saat paste
+> - Beberapa aplikasi menerapkan ulang styling saat paste — Smart Paste Hub tidak bisa mengontrol perilaku aplikasi target
+> - Update OS bisa merusak clipboard hooks — diperlukan maintenance aktif
+
+> [!CAUTION]
+> **Privasi data:** Semua pemrosesan HARUS dilakukan secara lokal (tanpa server). Ini adalah janji utama ke pengguna dan pembeda dari web-based tools.
+
+---
+
+## Ringkasan Seluruh Fitur (5 Fase)
+
+| # | Fitur | Fase | Kategori |
+|---|-------|------|----------|
+| 1 | Plain Text & Structure Presets | 1 | Core |
+| 2 | Smart Hotkey Paste | 1 | Core |
+| 3 | PDF Line-Break Fixer | 1 | Core |
+| 4 | Sensitive Data Masker | 1 | 🛡️ Security |
+| 5 | Auto-Clear Clipboard | 1 | 🛡️ Security |
+| 6 | Table Auto-Detect & Convert | 2 | Core |
+| 7 | JSON ↔ YAML ↔ TOML Converter | 2 | 🔄 Format |
+| 8 | Code Syntax Highlighter | 2 | 🔄 Format |
+| 9 | Markdown ↔ Rich Text | 2 | 🔄 Format |
+| 10 | Multi-Clipboard Merge | 2 | ⚡ Productivity |
+| 11 | Paste Queue | 2 | ⚡ Productivity |
+| 12 | Regex Transform Rules | 2 | 🎯 Niche |
+| 13 | Clipboard History | 3 | Core |
+| 14 | Pinned Snippets | 3 | Core |
+| 15 | Template Paste | 3 | ⚡ Productivity |
+| 16 | Freemium & License System | 3 | Business |
+| 17 | Smart Format Detection (AI) | 4 | 🤖 AI |
+| 18 | AI Rewrite on Paste | 4 | 🤖 AI |
+| 19 | OCR Paste (Screenshot→Text) | 4 | 🎯 Niche |
+| 20 | Cross-Device Clipboard Sync | 5 | 🌐 Sync |
+| 21 | Plugin System | 5 | Ekosistem |
+| 22 | Ecosystem Integrations | 5 | Ekosistem |
+
+---
+
+## Keputusan yang Perlu Diputuskan User
+
+1. **Tech stack utama:** Electron (rekomendasi untuk MVP) atau native per platform?
+2. **Platform prioritas:** Windows dulu, atau langsung cross-platform?
+3. **Model open source:** Core engine open source (untuk komunitas) atau fully proprietary?
+4. **Harga Pro:** Lifetime only, subscription only, atau keduanya?
+5. **Nama branding final:** "Smart Paste Hub" atau alternatif lain?
+6. **AI engine:** Local only (Ollama) atau opsi cloud API juga?
+7. **Cross-device sync:** Bangun relay server sendiri atau pakai layanan pihak ketiga?
