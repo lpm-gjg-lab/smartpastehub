@@ -1,0 +1,25 @@
+.layout {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  background-color: var(--bg-primary);
+}
+
+.sidebarWrapper {
+  width: 56px;
+  flex-shrink: 0;
+  border-right: 1px solid var(--border-subtle);
+  background-color: var(--surface-1);
+  display: flex;
+  flex-direction: column;
+  z-index: 10;
+}
+
+.mainContent {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  position: relative;
+  background-color: var(--bg-primary);
+}

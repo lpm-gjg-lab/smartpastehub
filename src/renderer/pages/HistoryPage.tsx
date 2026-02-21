@@ -1,112 +1,138 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import styles from '../styles/pages/HistoryPage.module.css';
+import { invokeIPC, onIPC } from '../lib/ipc';
 import { Button } from '../components/Button';
-import { Input } from '../components/Input';
-import { Badge } from '../components/Badge';
+const CONTENT_TYPE_ICONS: Record<string, string> = { plain_text: '📄', pdf_text: '📋', url_text: '🔗', source_code: '💻', json_data: '｛', csv_table: '📊', html_table: '🗂️', email_text: '✉️', address: '📍', date_text: '📅' };
+import type { ContentType } from '../../shared/types';
+import { useToastStore } from '../stores/useToastStore';
 
-const MOCK_HISTORY = [
-  {
-    id: 1,
-    content: 'const greeting = "Hello, World!";\nconsole.log(greeting);',
-    type: 'TEXT',
-    app: 'VS Code',
-    time: '2 min ago',
-  },
-  {
-    id: 2,
-    content: 'SELECT * FROM users WHERE active = true ORDER BY created_at DESC LIMIT 10;',
-    type: 'TEXT',
-    app: 'DataGrip',
-    time: '15 min ago',
-  },
-  {
-    id: 3,
-    content: 'https://api.example.com/v2/users?page=1&limit=25',
-    type: 'TEXT',
-    app: 'Chrome',
-    time: '1 hour ago',
-  },
-  {
-    id: 4,
-    content: '{ "name": "SmartPasteHub", "version": "0.1.0", "dependencies": {} }',
-    type: 'DATA',
-    app: 'Postman',
-    time: '3 hours ago',
-  },
-];
+interface HistoryClip {
+  id: number;
+  original_text: string;
+  cleaned_text: string;
+  content_type: ContentType;
+  created_at: string;
+}
 
-const typeVariant = (type: string) => {
-  switch (type) {
-    case 'DATA': return 'success' as const;
-    case 'TABLE': return 'warning' as const;
-    case 'OCR': return 'danger' as const;
-    default: return 'secondary' as const;
-  }
-};
+interface UsageSummary {
+  recentClips?: HistoryClip[];
+  [key: string]: unknown;
+}
 
 export const HistoryPage: React.FC = () => {
-  return (
-    <div className={styles.container}>
-      <div className={styles.header}>
-        <h1 className="text-h1">History</h1>
-        <Button variant="ghost">Clear All</Button>
-      </div>
+  const [clips, setClips] = useState<HistoryClip[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const { addToast } = useToastStore();
 
-      <div className={styles.searchBar}>
-        <Input placeholder="Search clipboard history..." style={{ flex: 1 }} />
-        <Button variant="secondary">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+  const loadData = async () => {
+    try {
+      const summary = await invokeIPC<UsageSummary>('usage:summary');
+      if (summary?.recentClips) {
+        setClips(summary.recentClips);
+      }
+    } catch (err) {
+      console.error('Failed to load history', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
+    const cleanup = onIPC('usage:updated', () => loadData());
+    return cleanup;
+  }, []);
+
+  const handleCopy = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      addToast({
+        title: 'Copied',
+        message: 'Result copied to clipboard',
+        type: 'success',
+      });
+    } catch (err) {
+      addToast({
+        title: 'Copy Failed',
+        message: 'Could not copy to clipboard',
+        type: 'error',
+      });
+    }
+  };
+
+  const formatRelativeTime = (dateStr: string) => {
+    const d = new Date(dateStr);
+    const now = new Date();
+    const diffMins = Math.floor((now.getTime() - d.getTime()) / 60000);
+    
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    const diffHours = Math.floor(diffMins / 60);
+    if (diffHours < 24) return `${diffHours}h ago`;
+    return d.toLocaleDateString();
+  };
+
+  const filteredClips = clips.filter(clip => 
+    clip.cleaned_text.toLowerCase().includes(search.toLowerCase()) ||
+    clip.content_type.toLowerCase().includes(search.toLowerCase())
+  );
+
+  return (
+    <div className={styles.page}>
+      <div className={styles.header}>
+        <h1 className={styles.title}>History</h1>
+        <div className={styles.searchBox}>
+          <svg className={styles.searchIcon} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
           </svg>
-          Filter
-        </Button>
+          <input
+            type="text"
+            className={styles.searchInput}
+            placeholder="Search history..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
+        </div>
       </div>
 
       <div className={styles.list}>
-        {MOCK_HISTORY.map((item, index) => (
-          <div
-            key={item.id}
-            className={styles.item}
-            style={{ animationDelay: `${index * 50}ms` }}
-          >
-            <div className={styles.itemHeader}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-sm)' }}>
-                <Badge variant={typeVariant(item.type)}>{item.type}</Badge>
-                <span>{item.app}</span>
+        {loading ? (
+          <div className={styles.emptyState}>Loading...</div>
+        ) : filteredClips.length > 0 ? (
+          filteredClips.map((clip) => (
+            <div key={clip.id} className={styles.clipItem}>
+              <div className={styles.clipIcon}>
+                {CONTENT_TYPE_ICONS[clip.content_type] || '📄'}
               </div>
-              <span>{item.time}</span>
-            </div>
-            <div className={styles.itemContent}>{item.content}</div>
-            <div className={styles.itemActions}>
-              <Button variant="ghost" style={{ padding: '4px 8px', fontSize: '0.75rem' }}>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-                </svg>
+              <div className={styles.clipContent}>
+                <div className={styles.clipText}>
+                  {clip.cleaned_text.length > 120 
+                    ? clip.cleaned_text.substring(0, 120) + '...' 
+                    : clip.cleaned_text}
+                </div>
+                <div className={styles.clipMeta}>
+                  <span className={styles.clipType}>{clip.content_type.replace('_', ' ')}</span>
+                  <span className={styles.clipTime}>{formatRelativeTime(clip.created_at)}</span>
+                </div>
+              </div>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => handleCopy(clip.cleaned_text)}
+                className={styles.copyBtn}
+              >
                 Copy
               </Button>
-              <Button variant="ghost" style={{ padding: '4px 8px', fontSize: '0.75rem' }}>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <polyline points="3 6 5 6 21 6" />
-                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                </svg>
-                Delete
-              </Button>
-              <Button variant="ghost" style={{ padding: '4px 8px', fontSize: '0.75rem' }}>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                </svg>
-                Save
-              </Button>
             </div>
+          ))
+        ) : (
+          <div className={styles.emptyState}>
+            <div className={styles.emptyIcon}>🕰️</div>
+            <p>{search ? 'No matches found.' : 'No cleaned pastes yet. Start pasting!'}</p>
           </div>
-        ))}
-      </div>
-
-      <div className={styles.pagination}>
-        <Button variant="ghost" style={{ padding: '6px 10px' }}>← Prev</Button>
-        <span className="text-caption">Page 1 of 5</span>
-        <Button variant="ghost" style={{ padding: '6px 10px' }}>Next →</Button>
+        )}
       </div>
     </div>
   );
