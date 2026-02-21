@@ -4,32 +4,38 @@
   height: 100%;
   width: 100%;
   background-color: transparent;
-  padding: var(--space-md) 0;
+  padding: var(--space-xl) 0;
 }
 
 .logo {
   display: flex;
   justify-content: center;
   align-items: center;
-  margin-bottom: var(--space-xl);
+  margin-bottom: var(--space-2xl);
   padding: 0 var(--space-sm);
 }
 
 .logoIcon {
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   display: flex;
   justify-content: center;
   align-items: center;
   border-radius: var(--radius-md);
-  background: var(--surface-2);
+  background: var(--surface-1);
   border: 1px solid var(--border-subtle);
   box-shadow: var(--shadow-sm);
+  color: var(--accent-primary);
+  transition: transform var(--transition-fast);
+}
+
+.logoIcon:hover {
+  transform: scale(1.05);
 }
 
 .logoIcon svg {
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
 }
 
 .nav {
@@ -46,8 +52,8 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   border-radius: var(--radius-md);
   color: var(--text-tertiary);
   transition: all var(--transition-fast);
@@ -69,25 +75,26 @@
 
 .active {
   color: var(--accent-primary);
-  background: rgba(91, 110, 245, 0.1);
-  border-color: rgba(91, 110, 245, 0.2);
+  background: var(--surface-1);
+  border-color: var(--border-subtle);
+  box-shadow: var(--shadow-sm);
 }
 
 .active:hover {
   color: var(--accent-primary-hover);
-  background: rgba(91, 110, 245, 0.15);
+  background: var(--surface-1);
 }
 
 .activePill {
   position: absolute;
-  left: -8px; /* Past the edge of the navItem to touch sidebar edge */
+  left: -12px;
   top: 50%;
   transform: translateY(-50%);
-  width: 3px;
-  height: 20px;
+  width: 4px;
+  height: 24px;
   border-radius: 0 4px 4px 0;
   background-color: var(--accent-primary);
-  box-shadow: 0 0 8px var(--accent-primary);
+  box-shadow: 0 0 10px rgba(79, 70, 229, 0.4);
 }
 
 .icon {
@@ -100,28 +107,29 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: var(--space-md) 0 0;
+  padding: var(--space-xl) 0 0;
   border-top: 1px solid var(--border-subtle);
-  margin: 0 var(--space-sm);
+  margin: 0 var(--space-md);
 }
 
 .helpBtn {
   display: flex;
   justify-content: center;
   align-items: center;
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   border-radius: var(--radius-full);
   color: var(--text-tertiary);
   transition: all var(--transition-fast);
   background: transparent;
-  border: none;
+  border: 1px solid transparent;
   cursor: pointer;
 }
 
 .helpBtn:hover {
   color: var(--text-primary);
   background: var(--surface-2);
+  border-color: var(--border-subtle);
 }
 
 .helpBtn:focus-visible {
