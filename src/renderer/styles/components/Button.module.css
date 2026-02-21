@@ -2,7 +2,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 8px 16px;
+  padding: 8px 18px;
   border-radius: var(--radius-sm);
   font-weight: 600;
   font-size: 0.8125rem;
@@ -12,52 +12,57 @@
     background var(--transition-fast),
     box-shadow var(--transition-fast),
     transform var(--transition-fast),
-    border-color var(--transition-fast);
+    border-color var(--transition-fast),
+    opacity var(--transition-fast);
   cursor: pointer;
   position: relative;
-  overflow: hidden;
 }
 
 .button:active {
   transform: scale(0.97);
 }
 
-/* Primary */
+.button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Primary — bright gradient */
 .primary {
   background: var(--gradient-primary);
-  color: var(--bg-primary);
+  color: #fff;
   font-weight: 700;
-  box-shadow: 0 4px 14px rgba(0, 229, 200, 0.25);
+  box-shadow: var(--shadow-accent);
 }
 
-.primary:hover {
-  box-shadow:
-    0 6px 20px rgba(0, 229, 200, 0.35),
-    0 0 0 1px rgba(0, 229, 200, 0.2);
+.primary:hover:not(:disabled) {
+  box-shadow: var(--shadow-accent-strong);
+  filter: brightness(1.1);
 }
 
-/* Secondary */
+/* Secondary — subtle glass */
 .secondary {
-  background: var(--glass-bg);
+  background: var(--bg-tertiary);
   color: var(--text-primary);
   border-color: var(--glass-border);
-  backdrop-filter: blur(8px);
 }
 
-.secondary:hover {
-  background: var(--glass-bg-hover);
+.secondary:hover:not(:disabled) {
+  background: var(--bg-elevated);
   border-color: var(--glass-border-hover);
 }
 
 /* Danger */
 .danger {
-  background: var(--gradient-danger);
-  color: var(--text-on-accent);
-  box-shadow: 0 4px 14px rgba(248, 113, 113, 0.25);
+  background: var(--accent-danger);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(248, 113, 113, 0.2);
 }
 
-.danger:hover {
-  box-shadow: 0 6px 20px rgba(248, 113, 113, 0.35);
+.danger:hover:not(:disabled) {
+  filter: brightness(1.1);
+  box-shadow: 0 6px 18px rgba(248, 113, 113, 0.3);
 }
 
 /* Ghost */
@@ -66,17 +71,33 @@
   color: var(--text-secondary);
 }
 
-.ghost:hover {
-  background: rgba(0, 229, 200, 0.06);
+.ghost:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.04);
   color: var(--text-primary);
 }
 
-/* Icon */
+/* Icon button */
 .icon {
-  padding: var(--space-xs);
+  padding: 6px;
   border-radius: var(--radius-xs);
+  color: var(--text-secondary);
 }
 
-.icon:hover {
-  background: rgba(0, 229, 200, 0.08);
+.icon:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-primary);
+}
+.sm {
+  padding: 4px 12px;
+  font-size: 0.75rem;
+}
+
+.spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  flex-shrink: 0;
 }

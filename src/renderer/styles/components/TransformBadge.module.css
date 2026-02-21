@@ -1,0 +1,27 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  background: rgba(91, 110, 245, 0.1);
+  border: 1px solid rgba(91, 110, 245, 0.2);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: var(--accent-primary-hover);
+  white-space: nowrap;
+  transition: background var(--transition-fast);
+}
+
+.badge:hover {
+  background: rgba(91, 110, 245, 0.15);
+}
+
+.icon {
+  font-size: 0.75rem;
+  line-height: 1;
+}
+
+.label {
+  line-height: 1;
+}
