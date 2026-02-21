@@ -1,75 +1,83 @@
-import React, { useState } from 'react';
-import { Layout } from './components/Layout';
-import { DashboardPage } from './pages/DashboardPage';
-import { SettingsPage } from './pages/SettingsPage';
+import React, { useEffect, useState } from 'react';
+import './styles/globals.css';
+import { AppLayout } from './components/AppLayout';
+import { AppSidebar } from './components/AppSidebar';
+import { SmartPastePage } from './pages/SmartPastePage';
 import { HistoryPage } from './pages/HistoryPage';
-import { SnippetsPage } from './pages/SnippetsPage';
-import { TemplatesPage } from './pages/TemplatesPage';
-import { AIOCRPage } from './pages/AIOCRPage';
-import { SyncPage } from './pages/SyncPage';
-import { PluginsPage } from './pages/PluginsPage';
+import { SettingsPage } from './pages/SettingsPage';
 import { ToastContainer } from './components/Toast';
 import { useToastStore } from './stores/useToastStore';
 import { onIPC } from './lib/ipc';
+import type { AppTab } from './types';
 
-export default function App() {
-  const [activeTab, setActiveTab] = useState('dashboard');
+export const App: React.FC = () => {
+  const [activeTab, setActiveTab] = useState<AppTab>('paste');
   const { addToast } = useToastStore();
 
-  React.useEffect(() => {
-    onIPC('clipboard:cleaned', (payload) => {
-      const cleaned = (payload as { cleaned?: string }).cleaned ?? '';
-      addToast({
-        title: 'Text cleaned and ready',
-        message: `${cleaned.length} characters`,
-        type: 'success',
-      });
-    });
-    onIPC('security:alert', (payload) => {
-      const matches = (payload as { matches?: unknown[] }).matches ?? [];
-      addToast({
-        title: 'Sensitive data detected',
-        message: `${matches.length} match(es) found`,
-        type: 'warning',
-      });
-    });
-  }, [addToast]);
+  // Keyboard navigation for tabs
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey || e.metaKey) {
+        if (e.key === '1') {
+          e.preventDefault();
+          setActiveTab('paste');
+        } else if (e.key === '2') {
+          e.preventDefault();
+          setActiveTab('history');
+        } else if (e.key === '3') {
+          e.preventDefault();
+          setActiveTab('settings');
+        }
+      }
+    };
 
-  const renderContent = () => {
-    switch (activeTab) {
-      case 'dashboard':
-        return <DashboardPage />;
-      case 'settings':
-        return <SettingsPage />;
-      case 'history':
-        return <HistoryPage />;
-      case 'snippets':
-        return <SnippetsPage />;
-      case 'templates':
-        return <TemplatesPage />;
-      case 'ai':
-        return <AIOCRPage />;
-      case 'sync':
-        return <SyncPage />;
-      case 'plugins':
-        return <PluginsPage />;
-      default:
-        return <DashboardPage />;
-    }
-  };
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, []);
+
+  // Global IPC Listeners (must be preserved)
+  useEffect(() => {
+    const unsubSecurity = onIPC('security:alert', (payload: any) => {
+      addToast({
+        title: 'Sensitive Data Detected',
+        message: 'Your clipboard content contains sensitive information.',
+        type: 'warning',
+        duration: 8000
+      });
+    });
+
+    const unsubRecovery = onIPC('recovery:restored', () => {
+      addToast({
+        title: 'Session Restored',
+        message: 'Recovered from unexpected shutdown',
+        type: 'info'
+      });
+    });
+
+    return () => {
+      unsubSecurity();
+      unsubRecovery();
+    };
+  }, [addToast]);
 
   return (
     <>
-      <Layout activeTab={activeTab} onTabChange={setActiveTab}>
-        {renderContent()}
-      </Layout>
+      <div id="sr-announcer" className="sr-only" aria-live="polite"></div>
+      <AppLayout 
+        sidebar={
+          <AppSidebar 
+            activeTab={activeTab} 
+            onTabChange={setActiveTab} 
+          />
+        }
+      >
+        {activeTab === 'paste' && <SmartPastePage />}
+        {activeTab === 'history' && <HistoryPage />}
+        {activeTab === 'settings' && <SettingsPage />}
+      </AppLayout>
       <ToastContainer />
-      <div
-        id="sr-announcer"
-        aria-live="polite"
-        aria-atomic="true"
-        className="sr-only"
-      />
     </>
   );
-}
+};
+
+export default App;

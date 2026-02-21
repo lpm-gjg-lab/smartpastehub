@@ -1,0 +1,23 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  padding: var(--space-2xl) var(--space-xl);
+  overflow-y: auto;
+  gap: var(--space-xl);
+}
+
+.hero {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  animation: scaleIn var(--transition-base) forwards;
+}
+
+.resultContainer {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  padding-bottom: var(--space-xl);
+}
