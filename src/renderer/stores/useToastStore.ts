@@ -10,6 +10,10 @@ export interface Toast {
     label: string;
     onClick: () => void;
   };
+  actions?: Array<{
+    label: string;
+    onClick: () => void;
+  }>;
 }
 
 interface ToastState {
@@ -23,7 +27,7 @@ export const useToastStore = create<ToastState>((set) => ({
   addToast: (toast) => {
     const id = Math.random().toString(36).substring(2, 9);
     set((state) => ({ toasts: [...state.toasts, { ...toast, id }] }));
-    
+
     if (toast.duration !== 0) {
       setTimeout(() => {
         set((state) => ({

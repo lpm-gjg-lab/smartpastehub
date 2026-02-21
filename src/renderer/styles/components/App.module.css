@@ -1,6 +1,6 @@
 .shell {
   display: grid;
-  grid-template-columns: 240px 1fr;
+  grid-template-columns: 72px 1fr;
   min-height: 100vh;
   background: var(--bg-primary);
 }
@@ -8,9 +8,7 @@
 .sidebar {
   display: flex;
   flex-direction: column;
-  padding: var(--space-lg);
   background: var(--bg-secondary);
-  gap: var(--space-sm);
 }
 
 .brand {
@@ -54,6 +52,7 @@
   .shell {
     grid-template-columns: 1fr;
   }
+
   .sidebar {
     flex-direction: row;
     flex-wrap: wrap;

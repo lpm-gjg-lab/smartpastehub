@@ -1,19 +1,18 @@
 .card {
-  background: var(--glass-bg);
-  border-radius: var(--radius-lg);
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-md);
   padding: var(--space-lg);
   border: 1px solid var(--glass-border);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
   transition:
     border-color var(--transition-fast),
-    box-shadow var(--transition-base);
+    box-shadow var(--transition-base),
+    transform var(--transition-base);
   animation: slideUp var(--transition-slow) ease-out both;
 }
 
 .card:hover {
   border-color: var(--glass-border-hover);
-  box-shadow: var(--shadow-glow);
+  box-shadow: var(--shadow-sm);
 }
 
 .header {

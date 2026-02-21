@@ -18,9 +18,15 @@
 }
 
 .card {
-  background: var(--bg-secondary);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--glass-border);
   border-radius: var(--radius-md);
   padding: var(--space-lg);
+  transition: border-color var(--transition-fast);
+}
+
+.card:hover {
+  border-color: var(--glass-border-hover);
 }
 
 .cardList {
@@ -30,9 +36,15 @@
 }
 
 .cardItem {
-  background: var(--bg-secondary);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--glass-border);
   border-radius: var(--radius-md);
   padding: var(--space-md);
+  transition: border-color var(--transition-fast);
+}
+
+.cardItem:hover {
+  border-color: var(--glass-border-hover);
 }
 
 .row {
@@ -49,7 +61,16 @@
 }
 
 .search {
-  padding: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
   border-radius: var(--radius-sm);
-  border: 1px solid var(--bg-tertiary);
+  border: 1px solid var(--glass-border);
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  font-size: 0.8125rem;
+  transition: border-color var(--transition-fast);
+}
+
+.search:focus {
+  outline: none;
+  border-color: var(--accent-primary);
 }

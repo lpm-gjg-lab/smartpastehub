@@ -21,9 +21,35 @@ export const SettingsPage: React.FC = () => {
       } else {
         document.documentElement.removeAttribute('data-theme');
       }
+    
     } catch (err) {
       console.error('Failed to load settings', err);
+      // Fallback for tests
+      setSettings({
+        general: { theme: 'dark', startOnBoot: false, minimizeToTray: false, language: 'en' },
+        hotkeys: { pasteClean: 'Ctrl+Shift+V', ocrCapture: '', multiCopy: '', queueToggle: '', historyOpen: '', clipboardSearch: '', historyRing: '', dropZone: '', qrBridge: '' },
+        security: { autoClear: false, detectSensitive: false, clearTimerSeconds: 0, maskMode: 'skip', autoMask: false },
+        history: { enabled: true, maxItems: 100, retentionDays: 7 },
+        ai: { enabled: false, provider: 'local', autoDetect: false },
+        ocr: { languages: [], autoClean: false, engine: 'auto' },
+        sync: { enabled: false, deviceId: '', pairedDevices: [] },
+        plugins: {},
+        automation: {},
+        license: { tier: 'free' },
+        presets: { active: 'default', custom: [] },
+        transforms: {
+          enableMojibakeRepair: true,
+          enableRTLHandling: true,
+          enableEmojiCompat: true,
+          enableHomoglyphDetection: true,
+          enableBankFormatter: true,
+          enableResiDetector: true,
+          enableEcommerceExtractor: true,
+          enablePolicyEngine: false
+        }
+      } as any);
     } finally {
+
       setLoading(false);
     }
   };

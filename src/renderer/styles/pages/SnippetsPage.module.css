@@ -1,6 +1,4 @@
 .container {
-  max-width: 780px;
-  margin: 0 auto;
   animation: fadeIn var(--transition-slow) ease-out;
 }
 
@@ -18,57 +16,78 @@
 }
 
 .card {
-  background: var(--glass-bg);
+  background: var(--bg-tertiary);
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-md);
-  padding: var(--space-md);
-  backdrop-filter: blur(12px);
+  padding: var(--space-lg);
+  display: flex;
+  flex-direction: column;
   transition:
     border-color var(--transition-fast),
-    box-shadow var(--transition-base),
     transform var(--transition-base);
   animation: slideUp var(--transition-slow) ease-out both;
-  cursor: default;
 }
 
 .card:hover {
   border-color: var(--glass-border-hover);
-  box-shadow: var(--shadow-sm);
   transform: translateY(-2px);
 }
 
 .cardHeader {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   margin-bottom: var(--space-sm);
 }
 
 .cardTitle {
-  font-weight: 600;
   font-size: 0.875rem;
+  font-weight: 600;
   color: var(--text-primary);
 }
 
 .cardContent {
+  flex: 1;
   font-family: var(--font-mono);
   font-size: 0.75rem;
   color: var(--text-secondary);
-  white-space: pre-wrap;
+  line-height: 1.6;
+  margin-bottom: var(--space-md);
   overflow: hidden;
-  text-overflow: ellipsis;
   display: -webkit-box;
   -webkit-line-clamp: 4;
   -webkit-box-orient: vertical;
-  margin-bottom: var(--space-sm);
-  line-height: 1.6;
-  background: rgba(0, 0, 0, 0.15);
-  padding: var(--space-sm);
+  background: var(--bg-secondary);
+  padding: var(--space-sm) var(--space-md);
   border-radius: var(--radius-sm);
+  border: 1px solid var(--glass-border);
 }
 
 .cardFooter {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.cardActions {
+  display: flex;
+  gap: var(--space-xs);
+}
+
+.cardTags {
+  display: flex;
+  gap: var(--space-xs);
+  flex-wrap: wrap;
+}
+
+.emptyState {
+  text-align: center;
+  padding: var(--space-2xl) var(--space-lg);
+  color: var(--text-tertiary);
+}
+
+.emptyIcon {
+  font-size: 2rem;
+  margin-bottom: var(--space-md);
+  opacity: 0.5;
 }

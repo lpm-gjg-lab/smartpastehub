@@ -1,7 +1,7 @@
 .input {
   width: 100%;
   padding: 10px 14px;
-  background: var(--glass-bg);
+  background: var(--bg-tertiary);
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-sm);
   color: var(--text-primary);
@@ -10,7 +10,6 @@
     border-color var(--transition-fast),
     box-shadow var(--transition-fast),
     background var(--transition-fast);
-  backdrop-filter: blur(8px);
 }
 
 .input::placeholder {
@@ -24,6 +23,6 @@
 .input:focus {
   outline: none;
   border-color: var(--accent-primary);
-  box-shadow: 0 0 0 3px rgba(0, 229, 200, 0.1);
-  background: var(--glass-bg-hover);
+  box-shadow: 0 0 0 3px rgba(91, 110, 245, 0.12);
+  background: var(--bg-elevated);
 }
