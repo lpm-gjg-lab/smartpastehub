@@ -1,6 +1,5 @@
-import { clipboard } from 'electron';
-import { EventEmitter } from 'events';
-import { debounce } from '../shared/utils';
+import { clipboard } from "electron";
+import { EventEmitter } from "events";
 
 export interface ClipboardPayload {
   text: string;
@@ -8,13 +7,15 @@ export interface ClipboardPayload {
 }
 
 export class ClipboardWatcher extends EventEmitter {
-  private lastText = '';
+  private lastText = "";
   private intervalId: NodeJS.Timeout | null = null;
   private pollInterval = 250;
 
   start() {
-    const handler = debounce(() => this.checkClipboard(), 150);
-    this.intervalId = setInterval(handler, this.pollInterval);
+    this.intervalId = setInterval(
+      () => this.checkClipboard(),
+      this.pollInterval,
+    );
   }
 
   stop() {
@@ -24,10 +25,10 @@ export class ClipboardWatcher extends EventEmitter {
 
   private checkClipboard() {
     const text = clipboard.readText();
-    const html = clipboard.readHTML();
     if (text && text !== this.lastText) {
+      const html = clipboard.readHTML();
       this.lastText = text;
-      this.emit('change', { text, html } as ClipboardPayload);
+      this.emit("change", { text, html } as ClipboardPayload);
     }
   }
 }

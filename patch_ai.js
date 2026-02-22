@@ -1,4 +1,6 @@
-export type RewriteMode = 'fix_grammar' | 'rephrase' | 'summarize' | 'formalize';
+const fs = require('fs');
+
+const content = `export type RewriteMode = 'fix_grammar' | 'rephrase' | 'summarize' | 'formalize';
 
 export interface RewriteOptions {
   mode: RewriteMode;
@@ -21,12 +23,12 @@ export async function rewriteText(text: string, options: RewriteOptions): Promis
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${options.apiKey}`
+          'Authorization': \`Bearer \${options.apiKey}\`
         },
         body: JSON.stringify({
           model: 'gpt-3.5-turbo',
           messages: [
-            { role: 'system', content: systemPrompts[options.mode] + ` Please respond in ${options.language === 'id' ? 'Indonesian' : 'English'}.` },
+            { role: 'system', content: systemPrompts[options.mode] + \` Please respond in \${options.language === 'id' ? 'Indonesian' : 'English'}.\` },
             { role: 'user', content: text }
           ],
           temperature: 0.7
@@ -34,7 +36,7 @@ export async function rewriteText(text: string, options: RewriteOptions): Promis
       });
 
       if (!response.ok) {
-        throw new Error(`OpenAI API error: ${response.statusText}`);
+        throw new Error(\`OpenAI API error: \${response.statusText}\`);
       }
 
       const data = await response.json();
@@ -48,3 +50,6 @@ export async function rewriteText(text: string, options: RewriteOptions): Promis
   // Fallback for local or no API key
   return text;
 }
+`;
+
+fs.writeFileSync('src/ai/ai-rewriter.ts', content);

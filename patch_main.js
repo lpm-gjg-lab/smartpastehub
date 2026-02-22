@@ -1,4 +1,6 @@
-import { createRoot } from 'react-dom/client';
+const fs = require('fs');
+
+const content = `import { createRoot } from 'react-dom/client';
 import App from './App';
 import './styles/globals.css';
 
@@ -23,3 +25,6 @@ if (root) {
 
   createRoot(root).render(<Component />);
 }
+`;
+
+fs.writeFileSync('src/renderer/main.tsx', content);

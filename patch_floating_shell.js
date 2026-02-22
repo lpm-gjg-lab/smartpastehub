@@ -1,4 +1,7 @@
-import React, { ReactNode } from 'react';
+const fs = require('fs');
+let content = fs.readFileSync('src/renderer/components/FloatingWindowShell.tsx', 'utf8');
+
+const replacement = `import React, { ReactNode } from 'react';
 
 interface Props {
   title: string;
@@ -38,7 +41,7 @@ export function FloatingWindowShell({ title, icon, children, width = '100vw', he
           userSelect: 'none'
         } as React.CSSProperties}
       >
-        <span>{icon && `${icon} `}{title}</span>
+        <span>{icon && \`\${icon} \`}{title}</span>
         <button 
           onClick={() => window.close()} 
           style={{
@@ -71,3 +74,6 @@ export function FloatingWindowShell({ title, icon, children, width = '100vw', he
     </div>
   );
 }
+`;
+
+fs.writeFileSync('src/renderer/components/FloatingWindowShell.tsx', replacement);

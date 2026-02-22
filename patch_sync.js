@@ -1,4 +1,6 @@
-import { encrypt, decrypt } from './encryption';
+const fs = require('fs');
+
+const content = `import { encrypt, decrypt } from './encryption';
 import { createRelayMessage, SyncMessage } from './relay-client';
 import { logger } from '../shared/logger';
 
@@ -41,7 +43,7 @@ export async function broadcastClipboard(text: string) {
   try {
     const payload = JSON.stringify({ text, timestamp: Date.now() });
     const encrypted = encrypt(payload, sharedSecret);
-    const msg = createRelayMessage('clipboard', localDeviceId, JSON.stringify(encrypted), Date.now().toString());
+    const msg = createRelayMessage('clipboard', localDeviceId, encrypted, Date.now().toString());
     
     // wsClient?.send(JSON.stringify(msg));
     logger.info('Broadcasted clipboard to paired devices', { size: msg.payload.length });
@@ -49,3 +51,6 @@ export async function broadcastClipboard(text: string) {
     logger.error('Failed to broadcast clipboard', { err });
   }
 }
+`;
+
+fs.writeFileSync('src/sync/sync-manager.ts', content);

@@ -6,6 +6,7 @@ import { useSmartPasteStore } from '../stores/useSmartPasteStore';
 import { useToastStore } from '../stores/useToastStore';
 import { invokeIPC, onIPC } from '../lib/ipc';
 import { getTransformLabels } from '../lib/transform-labels';
+import { Button } from '../components/Button';
 import type { ContentType, CleanResult } from '../../shared/types';
 
 interface ProcessClipboardResult {
@@ -19,6 +20,14 @@ interface ProcessClipboardResult {
 }
 
 export const SmartPastePage: React.FC = () => {
+  const openFloatingWindow = async (route: string, title: string, width = 440, height = 600) => {
+    try {
+      await invokeIPC('window:open', { route, width, height });
+    } catch (e) {
+      addToast({ title: `Failed to open ${title}`, type: 'error' });
+    }
+  };
+
   const store = useSmartPasteStore();
   const { addToast } = useToastStore();
 

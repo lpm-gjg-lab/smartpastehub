@@ -15,4 +15,4 @@ export interface SmartPasteResult {
   timestamp: number;
 }
 
-export type AppTab = 'paste' | 'history' | 'settings';
+export type AppTab = 'paste' | 'history' | 'snippets' | 'templates' | 'ai' | 'sync' | 'plugins' | 'settings';

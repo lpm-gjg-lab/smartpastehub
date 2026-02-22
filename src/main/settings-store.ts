@@ -1,72 +1,85 @@
-import fs from 'fs';
-import path from 'path';
-import { app } from 'electron';
-import { AppSettings } from '../shared/types';
-import { DEFAULT_SETTINGS } from '../shared/constants';
+import fs from "fs/promises";
+import path from "path";
+import { app } from "electron";
+import { AppSettings } from "../shared/types";
+import { DEFAULT_SETTINGS } from "../shared/constants";
 
 const mutableDefaults = JSON.parse(
   JSON.stringify(DEFAULT_SETTINGS),
 ) as AppSettings;
 
 function getConfigPath(): string {
-  return path.join(app.getPath('userData'), 'config.json');
+  return path.join(app.getPath("userData"), "config.json");
 }
 
-function readDiskSettings(): AppSettings {
+function mergeSettings(
+  base: AppSettings,
+  partial: Partial<AppSettings>,
+): AppSettings {
+  return {
+    ...base,
+    ...partial,
+    general: { ...base.general, ...partial.general },
+    hotkeys: { ...base.hotkeys, ...partial.hotkeys },
+    presets: { ...base.presets, ...partial.presets },
+    security: { ...base.security, ...partial.security },
+    history: { ...base.history, ...partial.history },
+    ai: { ...base.ai, ...partial.ai },
+    ocr: { ...base.ocr, ...partial.ocr },
+    sync: { ...base.sync, ...partial.sync },
+    license: { ...base.license, ...partial.license },
+  };
+}
+
+async function readDiskSettings(): Promise<AppSettings> {
   const configPath = getConfigPath();
-  if (!fs.existsSync(configPath)) {
-    fs.writeFileSync(
-      configPath,
-      JSON.stringify(mutableDefaults, null, 2),
-      'utf8',
-    );
-    return { ...mutableDefaults };
-  }
 
   try {
-    const raw = fs.readFileSync(configPath, 'utf8');
+    const raw = await fs.readFile(configPath, "utf8");
     const parsed = JSON.parse(raw) as Partial<AppSettings>;
-    return {
-      ...mutableDefaults,
-      ...parsed,
-      general: { ...mutableDefaults.general, ...parsed.general },
-      hotkeys: { ...mutableDefaults.hotkeys, ...parsed.hotkeys },
-      presets: { ...mutableDefaults.presets, ...parsed.presets },
-      security: { ...mutableDefaults.security, ...parsed.security },
-      history: { ...mutableDefaults.history, ...parsed.history },
-      ai: { ...mutableDefaults.ai, ...parsed.ai },
-      ocr: { ...mutableDefaults.ocr, ...parsed.ocr },
-      sync: { ...mutableDefaults.sync, ...parsed.sync },
-      license: { ...mutableDefaults.license, ...parsed.license },
-    };
-  } catch {
+    return mergeSettings(mutableDefaults, parsed);
+  } catch (error) {
+    const maybeError = error as NodeJS.ErrnoException;
+    if (maybeError.code !== "ENOENT") {
+      return { ...mutableDefaults };
+    }
+
+    await writeDiskSettings(mutableDefaults);
     return { ...mutableDefaults };
   }
 }
 
-function writeDiskSettings(settings: AppSettings): void {
-  fs.writeFileSync(getConfigPath(), JSON.stringify(settings, null, 2), 'utf8');
+async function writeDiskSettings(settings: AppSettings): Promise<void> {
+  const configPath = getConfigPath();
+  const tempPath = `${configPath}.tmp`;
+  const payload = JSON.stringify(settings, null, 2);
+  await fs.writeFile(tempPath, payload, "utf8");
+  await fs.rename(tempPath, configPath);
 }
 
-export function getSettings(): AppSettings {
-  return readDiskSettings();
+let cachedSettings: AppSettings | null = null;
+let writeQueue: Promise<void> = Promise.resolve();
+
+function scheduleWrite(settings: AppSettings): Promise<void> {
+  writeQueue = writeQueue
+    .catch(() => undefined)
+    .then(() => writeDiskSettings(settings));
+  return writeQueue;
 }
 
-export function updateSettings(partial: Partial<AppSettings>): AppSettings {
-  const current = readDiskSettings();
-  const updated: AppSettings = {
-    ...current,
-    ...partial,
-    general: { ...current.general, ...partial.general },
-    hotkeys: { ...current.hotkeys, ...partial.hotkeys },
-    presets: { ...current.presets, ...partial.presets },
-    security: { ...current.security, ...partial.security },
-    history: { ...current.history, ...partial.history },
-    ai: { ...current.ai, ...partial.ai },
-    ocr: { ...current.ocr, ...partial.ocr },
-    sync: { ...current.sync, ...partial.sync },
-    license: { ...current.license, ...partial.license },
-  };
-  writeDiskSettings(updated);
+export async function getSettings(): Promise<AppSettings> {
+  if (!cachedSettings) {
+    cachedSettings = await readDiskSettings();
+  }
+  return cachedSettings;
+}
+
+export async function updateSettings(
+  partial: Partial<AppSettings>,
+): Promise<AppSettings> {
+  const current = await getSettings();
+  const updated = mergeSettings(current, partial);
+  cachedSettings = updated;
+  await scheduleWrite(updated);
   return updated;
 }

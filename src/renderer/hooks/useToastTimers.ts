@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback } from "react";
 
 export function useToastTimers(onHide: () => void, displayTimeMs = 4000) {
   const [closing, setClosing] = useState(false);
@@ -20,13 +20,22 @@ export function useToastTimers(onHide: () => void, displayTimeMs = 4000) {
     }, displayTimeMs);
   }, [clearDismissTimers, onHide, displayTimeMs]);
 
-  const scheduleClose = useCallback((delayMs = 1000) => {
-    clearDismissTimers();
-    setTimeout(() => {
-      setClosing(true);
-      setTimeout(() => onHide(), 300);
-    }, delayMs);
-  }, [clearDismissTimers, onHide]);
+  const scheduleClose = useCallback(
+    (delayMs = 1000) => {
+      clearDismissTimers();
+      hideTimerRef.current = window.setTimeout(() => {
+        setClosing(true);
+        closeTimerRef.current = window.setTimeout(() => onHide(), 300);
+      }, delayMs);
+    },
+    [clearDismissTimers, onHide],
+  );
 
-  return { closing, setClosing, startDismissTimers, clearDismissTimers, scheduleClose };
+  return {
+    closing,
+    setClosing,
+    startDismissTimers,
+    clearDismissTimers,
+    scheduleClose,
+  };
 }

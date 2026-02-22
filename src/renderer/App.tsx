@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import './styles/globals.css';
+import { Onboarding } from './components/Onboarding';
 import { AppLayout } from './components/AppLayout';
 import { AppSidebar } from './components/AppSidebar';
 import { SmartPastePage } from './pages/SmartPastePage';
@@ -12,6 +13,7 @@ import type { AppTab } from './types';
 
 export const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<AppTab>('paste');
+  const [showOnboarding, setShowOnboarding] = useState(() => !localStorage.getItem('onboarded'));
   const { addToast } = useToastStore();
 
   // Keyboard navigation for tabs
