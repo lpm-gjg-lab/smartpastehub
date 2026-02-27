@@ -1,9 +1,17 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 
 export interface TemplateField {
   name: string;
-  type: 'system' | 'user';
+  type: "system" | "user";
   defaultValue?: string;
+}
+
+function parseUserTemplateFields(content: string): TemplateField[] {
+  const matches = content.match(/\{(\w+)\}/g) ?? [];
+  const variables = Array.from(
+    new Set(matches.map((match) => match.replace(/[{}]/g, ""))),
+  );
+  return variables.map((name) => ({ name, type: "user" }));
 }
 
 export function useTemplateFields(rawContent: string) {
@@ -15,26 +23,18 @@ export function useTemplateFields(rawContent: string) {
       setFields([]);
       return;
     }
-    void (async () => {
-      try {
-        const res = (await window.electronAPI?.invoke('template:get-fields', rawContent)) as { data: TemplateField[] } | undefined;
-        const f = res?.data ?? [];
-        setFields(f);
-        
-        // Reset user values that no longer appear
-        setUserValues((prev) => {
-          const next: Record<string, string> = {};
-          for (const field of f) {
-            if (field.type === 'user') {
-              next[field.name] = prev[field.name] ?? '';
-            }
-          }
-          return next;
-        });
-      } catch (err) {
-        console.error('Failed to parse template fields:', err);
+    const parsedFields = parseUserTemplateFields(rawContent);
+    setFields(parsedFields);
+
+    setUserValues((prev) => {
+      const next: Record<string, string> = {};
+      for (const field of parsedFields) {
+        if (field.type === "user") {
+          next[field.name] = prev[field.name] ?? "";
+        }
       }
-    })();
+      return next;
+    });
   }, [rawContent]);
 
   return { fields, userValues, setUserValues };

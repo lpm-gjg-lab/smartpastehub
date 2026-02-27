@@ -71,7 +71,7 @@
   font-size: 0.6875rem;
   font-weight: 500;
   background: rgba(167, 139, 250, 0.12);
-  color: var(--accent-purple);
+  color: var(--accent-secondary);
   border: 1px solid rgba(167, 139, 250, 0.18);
 }
 

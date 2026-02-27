@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
+import { onIPC } from "../lib/ipc";
 
 export interface ToastData {
   cleaned: string;
@@ -9,20 +10,32 @@ export interface ToastData {
   isMerged?: boolean;
   mergedCount?: number;
   sourceApp?: string;
+  sensitiveCount?: number;
+  sensitiveTypes?: string[];
+  sizeKb?: number;
+  fieldIntent?: string;
+  preview?: string;
+  previewRequired?: boolean;
+  paletteOptions?: string[];
+  previewOriginal?: string;
+  previewCleaned?: string;
+  previewStats?: string[];
+  paletteSelected?: string;
+  contentType?: string;
+  strategyIntent?: "plain_text" | "rich_text";
 }
 
 export function useToastData(onNewData?: () => void) {
   const [data, setData] = useState<ToastData | null>(null);
 
   useEffect(() => {
-    // @ts-ignore
-    const cleanup = window.floatingAPI?.on('toast:data', (payload: any) => {
+    const cleanup = onIPC("toast:data", (payload) => {
       setData(payload as ToastData);
       if (onNewData) onNewData();
     });
 
     return () => {
-      if (cleanup) cleanup();
+      cleanup();
     };
   }, [onNewData]);
 

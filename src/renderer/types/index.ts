@@ -1,4 +1,4 @@
-import type { ContentType } from '../../shared/types';
+import type { ContentType } from "../../shared/types";
 
 export interface TransformLabel {
   id: string;
@@ -15,4 +15,10 @@ export interface SmartPasteResult {
   timestamp: number;
 }
 
-export type AppTab = 'paste' | 'history' | 'snippets' | 'templates' | 'ai' | 'sync' | 'plugins' | 'settings';
+export type AppTab =
+  | "dashboard"
+  | "paste"
+  | "history"
+  | "snippets"
+  | "templates"
+  | "settings";

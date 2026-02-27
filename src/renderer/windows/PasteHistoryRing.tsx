@@ -1,19 +1,14 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import { invokeIPC } from "../lib/ipc";
 
 interface StackItem {
   id: number;
   slotIndex: number;
   content: string;
+  originalText: string;
+  hasBeenCleaned: boolean;
   contentType: string;
   timestamp: number;
-}
-
-declare global {
-  interface Window {
-    electronAPI?: {
-      invoke: (channel: string, payload?: unknown) => Promise<unknown>;
-    };
-  }
 }
 
 function timeAgo(ts: number): string {
@@ -25,18 +20,22 @@ function timeAgo(ts: number): string {
 
 export default function PasteHistoryRing() {
   const [items, setItems] = useState<StackItem[]>([]);
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState("");
   const [selected, setSelected] = useState(0);
   const searchRef = useRef<HTMLInputElement>(null);
 
   const loadItems = useCallback(async () => {
-    const q = query.trim();
-    const channel = q ? 'ring:search' : 'ring:get-items';
-    const res = (await window.electronAPI?.invoke(channel, q || undefined)) as
-      | { data: StackItem[] }
-      | undefined;
-    setItems(res?.data ?? []);
-    setSelected(0);
+    try {
+      const q = query.trim();
+      const channel = q ? "ring:search" : "ring:get-items";
+      const entries = await invokeIPC<StackItem[]>(channel, q || undefined);
+      setItems(entries ?? []);
+      setSelected(0);
+    } catch (err) {
+      console.error("Failed to load ring items:", err);
+      setItems([]);
+      setSelected(0);
+    }
   }, [query]);
 
   useEffect(() => {
@@ -49,19 +48,22 @@ export default function PasteHistoryRing() {
 
   const handleKeyDown = useCallback(
     async (e: React.KeyboardEvent) => {
-      if (e.key === 'ArrowDown') {
+      if (e.key === "ArrowDown") {
         setSelected((s) => Math.min(s + 1, items.length - 1));
-      } else if (e.key === 'ArrowUp') {
+      } else if (e.key === "ArrowUp") {
         setSelected((s) => Math.max(s - 1, 0));
-      } else if (e.key === 'Enter') {
+      } else if (e.key === "Enter") {
         const item = items[selected];
-        if (item) await window.electronAPI?.invoke('ring:select', item.id);
-      } else if (e.key === 'Escape') {
-        await window.electronAPI?.invoke('ring:hide');
-      } else if (e.key === 'Delete') {
+        if (item) await invokeIPC("ring:select", item.id);
+      } else if (e.key === "o" || e.key === "O") {
+        const item = items[selected];
+        if (item?.hasBeenCleaned) await invokeIPC("ring:select-original", item.id);
+      } else if (e.key === "Escape") {
+        window.close();
+      } else if (e.key === "Delete") {
         const item = items[selected];
         if (item) {
-          await window.electronAPI?.invoke('ring:delete', item.id);
+          await invokeIPC("ring:delete", item.id);
           void loadItems();
         }
       }
@@ -70,12 +72,12 @@ export default function PasteHistoryRing() {
   );
 
   const handlePin = async (id: number) => {
-    await window.electronAPI?.invoke('ring:pin', id);
+    await invokeIPC("ring:pin", id);
     void loadItems();
   };
 
   const preview = (content: string) =>
-    content.length > 80 ? content.slice(0, 80) + '…' : content;
+    content.length > 80 ? content.slice(0, 80) + "…" : content;
 
   return (
     <div
@@ -83,23 +85,23 @@ export default function PasteHistoryRing() {
       style={{
         width: 320,
         maxHeight: 400,
-        background: 'rgba(20,20,30,0.92)',
-        backdropFilter: 'blur(12px)',
+        background: "var(--bg-tertiary)",
+        backdropFilter: "blur(12px)",
         borderRadius: 10,
-        border: '1px solid rgba(255,255,255,0.12)',
-        boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
-        display: 'flex',
-        flexDirection: 'column',
-        fontFamily: 'system-ui, sans-serif',
-        color: '#e8e8f0',
-        overflow: 'hidden',
+        border: "1px solid rgba(255,255,255,0.12)",
+        boxShadow: "var(--shadow-md)",
+        display: "flex",
+        flexDirection: "column",
+        fontFamily: "var(--font-sans)",
+        color: "var(--text-primary)",
+        overflow: "hidden",
       }}
     >
       {/* Search bar */}
       <div
         style={{
-          padding: '8px 10px',
-          borderBottom: '1px solid rgba(255,255,255,0.08)',
+          padding: "8px 10px",
+          borderBottom: "1px solid var(--border-subtle)",
         }}
       >
         <input
@@ -108,26 +110,26 @@ export default function PasteHistoryRing() {
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search clipboard…"
           style={{
-            width: '100%',
-            background: 'rgba(255,255,255,0.08)',
-            border: 'none',
+            width: "100%",
+            background: "var(--glass-bg-hover)",
+            border: "none",
             borderRadius: 6,
-            padding: '6px 10px',
-            color: '#e8e8f0',
+            padding: "6px 10px",
+            color: "var(--text-primary)",
             fontSize: 13,
-            outline: 'none',
-            boxSizing: 'border-box',
+            outline: "none",
+            boxSizing: "border-box",
           }}
         />
       </div>
 
       {/* Items list */}
-      <div style={{ overflowY: 'auto', flex: 1 }}>
+      <div style={{ overflowY: "auto", flex: 1 }}>
         {items.length === 0 && (
           <div
             style={{
               padding: 16,
-              textAlign: 'center',
+              textAlign: "center",
               opacity: 0.5,
               fontSize: 13,
             }}
@@ -139,17 +141,15 @@ export default function PasteHistoryRing() {
           <div
             key={item.id}
             onClick={() => setSelected(idx)}
-            onDoubleClick={() =>
-              void window.electronAPI?.invoke('ring:select', item.id)
-            }
+            onDoubleClick={() => void invokeIPC("ring:select", item.id)}
             style={{
-              padding: '8px 12px',
-              cursor: 'pointer',
+              padding: "8px 12px",
+              cursor: "pointer",
               background:
-                idx === selected ? 'rgba(100,120,255,0.25)' : 'transparent',
-              borderBottom: '1px solid rgba(255,255,255,0.05)',
-              display: 'flex',
-              alignItems: 'flex-start',
+                idx === selected ? "var(--accent-glow)" : "transparent",
+              borderBottom: "1px solid var(--border-subtle)",
+              display: "flex",
+              alignItems: "flex-start",
               gap: 8,
             }}
           >
@@ -157,12 +157,30 @@ export default function PasteHistoryRing() {
               <div
                 style={{
                   fontSize: 12,
-                  whiteSpace: 'nowrap',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
                 }}
               >
                 {preview(item.content)}
+                {item.hasBeenCleaned && (
+                  <span
+                    title={`Original: ${item.originalText.slice(0, 120)}${item.originalText.length > 120 ? "…" : ""}`}
+                    style={{
+                      marginLeft: 5,
+                      fontSize: 9,
+                      background: "var(--accent-primary, #4f8ef7)",
+                      color: "#fff",
+                      borderRadius: 3,
+                      padding: "1px 4px",
+                      verticalAlign: "middle",
+                      opacity: 0.85,
+                      cursor: "help",
+                    }}
+                  >
+                    cleaned
+                  </span>
+                )}
               </div>
               <div style={{ fontSize: 10, opacity: 0.5, marginTop: 2 }}>
                 {item.contentType} · {timeAgo(item.timestamp)}
@@ -175,12 +193,12 @@ export default function PasteHistoryRing() {
               }}
               title="Pin to top"
               style={{
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                color: 'rgba(255,255,255,0.4)',
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                color: "var(--text-tertiary)",
                 fontSize: 12,
-                padding: '2px 4px',
+                padding: "2px 4px",
               }}
             >
               📌
@@ -192,13 +210,13 @@ export default function PasteHistoryRing() {
       {/* Footer hint */}
       <div
         style={{
-          padding: '4px 12px',
+          padding: "4px 12px",
           fontSize: 10,
           opacity: 0.4,
-          borderTop: '1px solid rgba(255,255,255,0.06)',
+          borderTop: "1px solid var(--border-subtle)",
         }}
       >
-        ↑↓ navigate · Enter paste · Del remove · Esc close
+        ↑↓ navigate · Enter paste cleaned · O paste original · Del remove · Esc close
       </div>
     </div>
   );

@@ -1,29 +1,32 @@
-import React, { useState } from 'react';
-import { useTemplates } from '../hooks/template/useTemplates';
-import { useTemplateFields } from '../hooks/template/useTemplateFields';
-import { useTemplatePreview } from '../hooks/template/useTemplatePreview';
-import { FloatingWindowShell } from '../components/FloatingWindowShell';
-import { TemplateSelector } from '../components/template-form/TemplateSelector';
-import { TemplateEditor } from '../components/template-form/TemplateEditor';
-import { FieldInputs } from '../components/template-form/FieldInputs';
-import { TemplatePreview } from '../components/template-form/TemplatePreview';
-import { TemplateActionBar } from '../components/template-form/TemplateActionBar';
+import React, { useState } from "react";
+import { useTemplates } from "../hooks/template/useTemplates";
+import { useTemplateFields } from "../hooks/template/useTemplateFields";
+import { useTemplatePreview } from "../hooks/template/useTemplatePreview";
+import { FloatingWindowShell } from "../components/FloatingWindowShell";
+import { TemplateSelector } from "../components/template-form/TemplateSelector";
+import { TemplateEditor } from "../components/template-form/TemplateEditor";
+import { FieldInputs } from "../components/template-form/FieldInputs";
+import { TemplatePreview } from "../components/template-form/TemplatePreview";
+import { TemplateActionBar } from "../components/template-form/TemplateActionBar";
 
 export default function TemplateForm() {
-  const [selectedId, setSelectedId] = useState('');
-  const [rawContent, setRawContent] = useState('');
-  const [newName, setNewName] = useState('');
+  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [rawContent, setRawContent] = useState("");
+  const [newName, setNewName] = useState("");
 
   const { templates, saveTemplate } = useTemplates();
   const { fields, userValues, setUserValues } = useTemplateFields(rawContent);
   const { preview } = useTemplatePreview(rawContent, userValues);
 
-  const handleSelectTemplate = (id: string) => {
+  const handleSelectTemplate = (id: number | null) => {
     setSelectedId(id);
     const tmpl = templates.find((t) => t.id === id);
     if (tmpl) {
       setRawContent(tmpl.content);
       setNewName(tmpl.name);
+    } else {
+      setRawContent("");
+      setNewName("");
     }
   };
 

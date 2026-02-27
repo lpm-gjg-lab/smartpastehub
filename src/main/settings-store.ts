@@ -16,9 +16,12 @@ function mergeSettings(
   base: AppSettings,
   partial: Partial<AppSettings>,
 ): AppSettings {
+  const mergedAppFilter = {
+    ...(base.appFilter ?? { mode: "off" as const, apps: [] as string[] }),
+    ...(partial.appFilter ?? {}),
+  };
+
   return {
-    ...base,
-    ...partial,
     general: { ...base.general, ...partial.general },
     hotkeys: { ...base.hotkeys, ...partial.hotkeys },
     presets: { ...base.presets, ...partial.presets },
@@ -27,7 +30,46 @@ function mergeSettings(
     ai: { ...base.ai, ...partial.ai },
     ocr: { ...base.ocr, ...partial.ocr },
     sync: { ...base.sync, ...partial.sync },
-    license: { ...base.license, ...partial.license },
+    appFilter: mergedAppFilter,
+    appProfiles: partial.appProfiles ?? base.appProfiles,
+    automation: {
+      ...(base.automation ?? {
+        trustModeDefault: "balanced",
+        appTrustModes: [],
+        enableUniversalFallback: true,
+        enablePastePreview: true,
+        previewHoldMs: 250,
+        enableCommandPalette: true,
+        enableIntentFieldDetection: true,
+        enableSmartUrlTransform: true,
+        enableLocaleAwareness: true,
+        enableHealthGuard: true,
+        enableAutoLearning: true,
+        enableRecipes: true,
+        enableUndo: true,
+        sessionClusterMinutes: 20,
+      }),
+      ...(partial.automation ?? {}),
+    },
+    privacy: {
+      ...(base.privacy ?? {
+        enableEphemeralSensitiveClips: true,
+        sensitiveTtlSeconds: 90,
+        sensitiveAllowlistApps: [],
+        enablePrivacyFirewall: true,
+        neverPersistSensitive: true,
+      }),
+      ...(partial.privacy ?? {}),
+    },
+    diagnostics: {
+      ...(base.diagnostics ?? {
+        observabilityEnabled: true,
+        maxEvents: 500,
+      }),
+      ...(partial.diagnostics ?? {}),
+    },
+    recipes: partial.recipes ?? base.recipes,
+    autoLearnedRules: partial.autoLearnedRules ?? base.autoLearnedRules,
   };
 }
 

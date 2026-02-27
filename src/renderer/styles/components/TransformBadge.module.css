@@ -1,27 +1,24 @@
+/* ============================================================
+   TransformBadge.module.css — Applied transform pills
+   ============================================================ */
 .badge {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 2px 8px;
+  gap: 3px;
+  font-size: 0.625rem;
+  font-weight: 600;
+  padding: 2px 7px;
   border-radius: var(--radius-full);
-  background: rgba(91, 110, 245, 0.1);
-  border: 1px solid rgba(91, 110, 245, 0.2);
-  font-size: 0.6875rem;
-  font-weight: 500;
-  color: var(--accent-primary-hover);
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-subtle);
   white-space: nowrap;
-  transition: background var(--transition-fast);
+  letter-spacing: 0.02em;
+  transition: all var(--transition-fast);
 }
 
 .badge:hover {
-  background: rgba(91, 110, 245, 0.15);
-}
-
-.icon {
-  font-size: 0.75rem;
-  line-height: 1;
-}
-
-.label {
-  line-height: 1;
+  background: var(--accent-glow);
+  color: var(--accent-primary);
+  border-color: var(--border-accent);
 }

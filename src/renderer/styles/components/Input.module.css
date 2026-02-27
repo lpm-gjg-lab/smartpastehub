@@ -1,28 +1,49 @@
+/* ============================================================
+   Input.module.css — Form inputs
+   ============================================================ */
 .input {
-  width: 100%;
-  padding: 10px 14px;
   background: var(--bg-tertiary);
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  padding: 8px 12px;
   color: var(--text-primary);
-  font-size: 0.8125rem;
-  transition:
-    border-color var(--transition-fast),
-    box-shadow var(--transition-fast),
-    background var(--transition-fast);
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  outline: none;
+  width: 100%;
+  transition: all var(--transition-fast);
+}
+
+.input:focus {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px var(--accent-glow);
 }
 
 .input::placeholder {
   color: var(--text-tertiary);
 }
 
-.input:hover {
-  border-color: var(--glass-border-hover);
+.input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
-.input:focus {
+.select {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  padding: 8px 12px;
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
   outline: none;
+  width: 100%;
+  transition: all var(--transition-fast);
+  cursor: pointer;
+  appearance: auto;
+}
+
+.select:focus {
   border-color: var(--accent-primary);
-  box-shadow: 0 0 0 3px rgba(91, 110, 245, 0.12);
-  background: var(--bg-elevated);
+  box-shadow: 0 0 0 3px var(--accent-glow);
 }

@@ -1,25 +1,21 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 
-export function useTemplatePreview(rawContent: string, userValues: Record<string, string>) {
-  const [preview, setPreview] = useState('');
+export function useTemplatePreview(
+  rawContent: string,
+  userValues: Record<string, string>,
+) {
+  const [preview, setPreview] = useState("");
 
   useEffect(() => {
     if (!rawContent) {
-      setPreview('');
+      setPreview("");
       return;
     }
-    void (async () => {
-      try {
-        const res = (await window.electronAPI?.invoke('template:fill', {
-          content: rawContent,
-          values: userValues,
-          context: {},
-        })) as { data: string } | undefined;
-        setPreview(res?.data ?? '');
-      } catch (err) {
-        console.error('Failed to generate template preview:', err);
-      }
-    })();
+    const filled = rawContent.replace(
+      /\{(\w+)\}/g,
+      (_, key: string) => userValues[key] ?? `{${key}}`,
+    );
+    setPreview(filled);
   }, [rawContent, userValues]);
 
   return { preview };

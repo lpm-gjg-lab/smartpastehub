@@ -13,15 +13,24 @@ export interface LogEntry {
 }
 
 class Logger {
-  private logDir: string;
-  private currentFile: string;
+  private _logDir?: string;
+  private _currentFile?: string;
   private maxFileSize = 5 * 1024 * 1024;
   private maxFiles = 5;
 
-  constructor() {
-    this.logDir = path.join(app.getPath('userData'), 'logs');
-    fs.mkdirSync(this.logDir, { recursive: true });
-    this.currentFile = this.getLogFileName();
+  constructor() {}
+
+  private init() {
+    if (this._logDir) return;
+    try {
+      this._logDir = path.join(app.getPath('userData'), 'logs');
+      fs.mkdirSync(this._logDir, { recursive: true });
+      this._currentFile = this.getLogFileName();
+    } catch (e) {
+      this._logDir = path.join(process.cwd(), '.logs');
+      fs.mkdirSync(this._logDir, { recursive: true });
+      this._currentFile = this.getLogFileName();
+    }
   }
 
   debug(msg: string, ctx?: Record<string, unknown>) {
@@ -45,6 +54,7 @@ class Logger {
     message: string,
     context?: Record<string, unknown>,
   ) {
+    this.init();
     const entry: LogEntry = {
       timestamp: new Date().toISOString(),
       level,
@@ -52,7 +62,9 @@ class Logger {
       context: this.sanitizeContext(context),
     };
     const line = JSON.stringify(entry) + '\n';
-    fs.appendFileSync(this.currentFile, line);
+    if (this._currentFile) {
+      fs.appendFileSync(this._currentFile, line);
+    }
     if (process.env['NODE_ENV'] === 'development') {
       console.log(`[${level.toUpperCase()}] ${message}`, context || '');
     }
@@ -73,22 +85,23 @@ class Logger {
 
   private getLogFileName(): string {
     const date = new Date().toISOString().split('T')[0];
-    return path.join(this.logDir, `smartpaste-${date}.log`);
+    return path.join(this._logDir!, `smartpaste-${date}.log`);
   }
 
   private rotateIfNeeded() {
+    if (!this._currentFile || !this._logDir) return;
     try {
-      const stats = fs.statSync(this.currentFile);
+      const stats = fs.statSync(this._currentFile);
       if (stats.size < this.maxFileSize) return;
       const files = fs
-        .readdirSync(this.logDir)
+        .readdirSync(this._logDir)
         .filter((file) => file.startsWith('smartpaste-'))
         .sort();
       while (files.length >= this.maxFiles) {
         const oldest = files.shift();
-        if (oldest) fs.unlinkSync(path.join(this.logDir, oldest));
+        if (oldest) fs.unlinkSync(path.join(this._logDir, oldest));
       }
-      this.currentFile = this.getLogFileName();
+      this._currentFile = this.getLogFileName();
     } catch {
       return;
     }

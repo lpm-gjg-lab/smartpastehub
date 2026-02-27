@@ -1,4 +1,5 @@
-import React from 'react';
+import React from "react";
+import styles from "../../styles/components/TemplateForm.module.css";
 
 interface Props {
   preview: string;
@@ -6,24 +7,12 @@ interface Props {
 
 export function TemplatePreview({ preview }: Props) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-      <div style={{ fontSize: 11, opacity: 0.6, textTransform: 'uppercase' }}>
-        Preview
-      </div>
-      <div
-        style={{
-          background: '#1a1a24',
-          border: '1px solid rgba(255,255,255,0.1)',
-          padding: 10,
-          borderRadius: 6,
-          fontSize: 12,
-          fontFamily: 'monospace',
-          minHeight: 60,
-          whiteSpace: 'pre-wrap',
-          color: '#a0e0a0',
-        }}
-      >
-        {preview || <span style={{ opacity: 0.3 }}>Nothing to preview</span>}
+    <div className={styles.section}>
+      <div className={styles.sectionLabel}>Preview</div>
+      <div className={styles.previewBox}>
+        {preview || (
+          <span className={styles.emptyPreview}>Nothing to preview</span>
+        )}
       </div>
     </div>
   );

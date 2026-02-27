@@ -7,13 +7,14 @@
 }
 
 .sidebarWrapper {
-  width: 56px;
+  width: 200px;
   flex-shrink: 0;
-  border-right: 1px solid var(--border-subtle);
-  background-color: var(--surface-1);
+  background-color: var(--bg-secondary);
   display: flex;
   flex-direction: column;
   z-index: 10;
+  border-right: 1px solid var(--border-subtle);
+  transition: width var(--transition-base);
 }
 
 .mainContent {
@@ -22,4 +23,5 @@
   overflow-x: hidden;
   position: relative;
   background-color: var(--bg-primary);
+  min-width: 0;
 }

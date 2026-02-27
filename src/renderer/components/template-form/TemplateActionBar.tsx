@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
+import styles from "../../styles/components/TemplateForm.module.css";
 
 interface Props {
   onCopy: () => Promise<void>;
@@ -16,62 +17,25 @@ export function TemplateActionBar({ onCopy, onSave, disableSave }: Props) {
   };
 
   return (
-    <div
-      style={{
-        padding: '10px 14px',
-        borderTop: '1px solid rgba(255,255,255,0.08)',
-        display: 'flex',
-        justifyContent: 'space-between',
-        background: 'rgba(0,0,0,0.2)',
-      }}
-    >
+    <div className={styles.actionBar}>
       <button
         onClick={() => {
-          // @ts-ignore
-          window.floatingAPI?.send('template:close');
+          window.close();
         }}
-        style={{
-          background: 'transparent',
-          border: 'none',
-          color: 'rgba(255,255,255,0.5)',
-          cursor: 'pointer',
-          fontSize: 12,
-        }}
+        className={`${styles.btn} ${styles.btnGhost}`}
       >
         Cancel
       </button>
 
-      <div style={{ display: 'flex', gap: 8 }}>
-        <button
-          onClick={onSave}
-          disabled={disableSave}
-          style={{
-            background: 'rgba(255,255,255,0.1)',
-            border: 'none',
-            color: disableSave ? 'rgba(255,255,255,0.3)' : '#fff',
-            padding: '6px 14px',
-            borderRadius: 6,
-            cursor: disableSave ? 'not-allowed' : 'pointer',
-            fontSize: 12,
-            fontWeight: 500,
-          }}
-        >
+      <div className={styles.actions}>
+        <button onClick={onSave} disabled={disableSave} className={styles.btn}>
           💾 Save
         </button>
         <button
           onClick={handleCopy}
-          style={{
-            background: '#0070f3',
-            border: 'none',
-            color: '#fff',
-            padding: '6px 14px',
-            borderRadius: 6,
-            cursor: 'pointer',
-            fontSize: 12,
-            fontWeight: 500,
-          }}
+          className={`${styles.btn} ${styles.btnPrimary}`}
         >
-          {copied ? 'Copied!' : '📋 Fill & Copy'}
+          {copied ? "Copied!" : "📋 Fill & Copy"}
         </button>
       </div>
     </div>

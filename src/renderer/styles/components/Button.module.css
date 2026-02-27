@@ -1,102 +1,126 @@
-.button {
+/* ============================================================
+   Button.module.css — Premium button system
+   ============================================================ */
+
+.btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 8px 16px;
-  border-radius: var(--radius-sm);
-  font-family: var(--font-sans);
-  font-size: var(--text-sm);
-  font-weight: 500;
+  gap: 6px;
+  border: none;
   cursor: pointer;
-  transition: all var(--transition-fast);
-  outline: none;
-  border: 1px solid transparent;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  text-align: center;
   white-space: nowrap;
+  transition: all var(--transition-fast);
+  border-radius: var(--radius-md);
+  outline: none;
+  position: relative;
+  overflow: hidden;
+  user-select: none;
 }
 
-.button:disabled {
-  opacity: 0.6;
+.btn:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+}
+
+.btn:disabled {
+  opacity: 0.45;
   cursor: not-allowed;
   pointer-events: none;
 }
 
-.button:focus-visible {
-  box-shadow: 0 0 0 2px var(--bg-primary), 0 0 0 4px var(--accent-primary);
+/* ── Sizes ─────────────────────────────────────────────── */
+.sm {
+  height: 30px;
+  padding: 0 10px;
+  font-size: var(--text-xs);
+  border-radius: var(--radius-sm);
 }
 
+.base {
+  height: 36px;
+  padding: 0 16px;
+  font-size: var(--text-sm);
+}
+
+.lg {
+  height: 42px;
+  padding: 0 22px;
+  font-size: var(--text-base);
+}
+
+/* ── Primary ───────────────────────────────────────────── */
 .primary {
-  background-color: var(--accent-primary);
-  color: #ffffff;
-  border-color: rgba(0, 0, 0, 0.1);
-  box-shadow: var(--shadow-sm);
+  background: var(--gradient-primary);
+  color: white;
+  box-shadow: 0 2px 8px var(--accent-glow);
 }
 
 .primary:hover:not(:disabled) {
-  background-color: var(--accent-primary-hover);
+  box-shadow: 0 4px 16px var(--accent-glow-strong);
   transform: translateY(-1px);
-  box-shadow: var(--shadow-md);
+  filter: brightness(1.08);
 }
 
 .primary:active:not(:disabled) {
-  transform: translateY(0);
+  transform: translateY(0px);
+  box-shadow: 0 1px 4px var(--accent-glow);
+  filter: brightness(0.95);
 }
 
+/* ── Secondary ─────────────────────────────────────────── */
 .secondary {
-  background-color: var(--surface-2);
+  background: var(--bg-tertiary);
   color: var(--text-primary);
-  border-color: var(--border-subtle);
-  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-default);
 }
 
 .secondary:hover:not(:disabled) {
-  background-color: var(--surface-3);
-  border-color: var(--border-default);
+  background: var(--bg-elevated);
+  border-color: var(--border-strong);
+  transform: translateY(-1px);
 }
 
+.secondary:active:not(:disabled) {
+  transform: translateY(0px);
+  background: var(--bg-surface);
+}
+
+/* ── Ghost ─────────────────────────────────────────────── */
 .ghost {
-  background-color: transparent;
+  background: transparent;
   color: var(--text-secondary);
+  border: 1px solid transparent;
 }
 
 .ghost:hover:not(:disabled) {
-  background-color: var(--surface-2);
+  background: var(--glass-bg-hover);
   color: var(--text-primary);
+  border-color: var(--border-subtle);
 }
 
+.ghost:active:not(:disabled) {
+  background: var(--glass-bg);
+}
+
+/* ── Danger ────────────────────────────────────────────── */
 .danger {
-  background-color: transparent;
+  background: rgba(239, 68, 68, 0.12);
   color: var(--accent-danger);
-  border-color: rgba(239, 68, 68, 0.2);
+  border: 1px solid rgba(239, 68, 68, 0.20);
 }
 
 .danger:hover:not(:disabled) {
-  background-color: rgba(239, 68, 68, 0.1);
+  background: rgba(239, 68, 68, 0.20);
+  border-color: rgba(239, 68, 68, 0.35);
+  transform: translateY(-1px);
 }
 
-.icon {
-  padding: 8px;
-  border-radius: var(--radius-md);
-  background-color: transparent;
-  color: var(--text-secondary);
-}
-
-.icon:hover:not(:disabled) {
-  background-color: var(--surface-2);
-  color: var(--text-primary);
-}
-
-.sm {
-  padding: 4px 12px;
-  font-size: 0.75rem;
-}
-
-.spinner {
-  width: 14px;
-  height: 14px;
-  border: 2px solid rgba(255,255,255,0.3);
-  border-top-color: currentColor;
-  border-radius: 50%;
-  animation: spin 0.6s linear infinite;
-  flex-shrink: 0;
+.danger:active:not(:disabled) {
+  transform: translateY(0px);
+  background: rgba(239, 68, 68, 0.25);
 }

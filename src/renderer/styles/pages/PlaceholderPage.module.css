@@ -1,40 +1,444 @@
+/* ============================================================
+   PlaceholderPage.module.css — Shared styles for Snippets,
+   Templates, AI Settings, Sync, and Plugins pages
+   ============================================================ */
+
+/* ── Page Shell ─────────────────────────────────────────────── */
+.page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 20px 24px;
+  gap: 12px;
+  overflow-y: auto;
+}
+
+/* ── Header ─────────────────────────────────────────────────── */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* ── Search / Text Input ────────────────────────────────────── */
+.search {
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border-default);
+  font-size: 0.9rem;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  outline: none;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* ── Form Card ──────────────────────────────────────────────── */
+.formCard {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-default);
+  border-radius: 10px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.formRow {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.formRowDouble {
+  display: flex;
+  gap: 12px;
+}
+
+.label {
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.input {
+  padding: 7px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border-default);
+  font-size: 0.9rem;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  outline: none;
+}
+
+.textarea {
+  padding: 7px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border-default);
+  font-size: 0.88rem;
+  font-family: monospace;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  resize: vertical;
+  outline: none;
+}
+
+.formActions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+/* ── Buttons ────────────────────────────────────────────────── */
+.btnPrimary {
+  padding: 7px 16px;
+  border-radius: 6px;
+  border: none;
+  background: var(--accent-primary);
+  color: #fff;
+  font-size: 0.88rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.btnSecondary {
+  padding: 7px 16px;
+  border-radius: 6px;
+  border: 1px solid var(--border-default);
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 0.88rem;
+  cursor: pointer;
+}
+
+.btnSmall {
+  padding: 4px 10px;
+  border-radius: 5px;
+  border: 1px solid var(--border-default);
+  background: transparent;
+  font-size: 0.78rem;
+  cursor: pointer;
+  color: var(--text-primary);
+}
+
+.btnDanger {
+  border-color: #ef4444;
+  color: #ef4444;
+}
+
+/* ── Empty State ─────────────────────────────────────────────── */
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  gap: 8px;
+  color: var(--text-secondary);
+}
+
+/* ── List & Card ─────────────────────────────────────────────── */
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+}
+
+.card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-default);
+  border-radius: 8px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cardTop {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cardName {
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.badge {
+  background: var(--accent-glow);
+  color: var(--accent-primary);
+  border-radius: 4px;
+  padding: 2px 7px;
+  font-size: 0.72rem;
+  font-weight: 500;
+}
+
+.badgeSuccess {
+  background: var(--success-glow);
+  color: var(--accent-success);
+  border-radius: 4px;
+  padding: 2px 7px;
+  font-size: 0.72rem;
+  font-weight: 500;
+}
+
+.preview {
+  margin: 0;
+  font-size: 0.82rem;
+  font-family: monospace;
+  color: var(--text-secondary);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.tags {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.cardActions {
+  display: flex;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+/* ── Confirm-delete inline row ──────────────────────────────── */
+.confirmInline {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.confirmLabel {
+  font-size: 0.78rem;
+  color: #ef4444;
+}
+
+/* ── Fill modal overlay ─────────────────────────────────────── */
+.fillModal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  margin: auto;
+  max-width: 480px;
+  max-height: 90vh;
+  overflow-y: auto;
+  z-index: 999;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+}
+
+.fillModalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.fillResultPre {
+  margin: 0;
+  font-size: 0.82rem;
+  font-family: monospace;
+  color: var(--text-secondary);
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: var(--bg-tertiary);
+  padding: 10px;
+  border-radius: 6px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+/* ── Variables hint ─────────────────────────────────────────── */
+.varsHint {
+  font-size: 0.78rem;
+  color: var(--accent-primary);
+}
+
+.varCode {
+  margin-right: 4px;
+  background: var(--accent-glow);
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+
+/* ── AI / Sync / Plugins inner styles ───────────────────────── */
+.section {
+  margin-bottom: 20px;
+}
+
+.sectionTitle {
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+  margin-bottom: 10px;
+}
+
+.row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+
+.rowHoriz {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.rowLabel {
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.inputFull {
+  padding: 7px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border-default);
+  font-size: 0.9rem;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  outline: none;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.selectFull {
+  padding: 7px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border-default);
+  font-size: 0.9rem;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  outline: none;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.hint {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+/* ── Sync page ──────────────────────────────────────────────── */
+.info {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+
+.deviceChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-default);
+  border-radius: 20px;
+  padding: 4px 10px;
+  font-size: 0.8rem;
+  margin: 4px 4px 4px 0;
+}
+
+.qrBox {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.qrItem {
+  text-align: center;
+}
+
+.qrImage {
+  width: 200px;
+  height: 200px;
+  image-rendering: pixelated;
+  border-radius: 8px;
+  border: 1px solid var(--border-default);
+}
+
+.qrCaption {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+/* ── Plugins page ───────────────────────────────────────────── */
+.pluginBanner {
+  background: var(--accent-glow);
+  border: 1px solid var(--accent-primary);
+  border-radius: 10px;
+  padding: 12px 16px;
+  font-size: 0.85rem;
+  color: var(--accent-primary);
+  margin-bottom: 16px;
+  line-height: 1.5;
+}
+
+.pluginCard {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-default);
+  border-radius: 8px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.pluginIcon {
+  font-size: 1.8rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.pluginInfo {
+  flex: 1;
+}
+
+.pluginName {
+  font-weight: 600;
+  font-size: 0.95rem;
+  margin-bottom: 2px;
+}
+
+.pluginDesc {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.pluginChip {
+  display: inline-block;
+  font-size: 0.7rem;
+  padding: 2px 7px;
+  border-radius: 10px;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  margin-top: 6px;
+}
+
+/* ── Container & animation (legacy classes kept) ────────────── */
 .container {
   max-width: 720px;
   margin: 0 auto;
   animation: fadeIn var(--transition-slow) ease-out;
-}
-
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: var(--space-lg);
-}
-
-.section {
-  margin-bottom: var(--space-xl);
-}
-
-.sectionTitle {
-  font-size: 0.6875rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--text-tertiary);
-  margin-bottom: var(--space-md);
-}
-
-.card {
-  background: var(--bg-tertiary);
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius-md);
-  padding: var(--space-lg);
-  transition: border-color var(--transition-fast);
-  animation: slideUp var(--transition-slow) ease-out both;
-}
-
-.card:hover {
-  border-color: var(--glass-border-hover);
 }
 
 .grid {
@@ -43,27 +447,8 @@
   gap: var(--space-md);
 }
 
-.row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: var(--space-sm) 0;
-}
-
-.row+.row {
+.row + .row {
   border-top: 1px solid var(--glass-border);
-}
-
-.label {
-  font-size: 0.8125rem;
-  font-weight: 500;
-  color: var(--text-primary);
-}
-
-.description {
-  font-size: 0.75rem;
-  color: var(--text-secondary);
-  margin-top: 2px;
 }
 
 .keycap {
@@ -74,12 +459,6 @@
   font-family: var(--font-mono);
   font-size: 0.6875rem;
   color: var(--text-secondary);
-}
-
-.title {
-  font-weight: 600;
-  font-size: 0.875rem;
-  color: var(--text-primary);
 }
 
 .statusDot {

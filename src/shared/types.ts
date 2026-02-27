@@ -1,19 +1,29 @@
 export type ContentType =
-  | 'plain_text'
-  | 'pdf_text'
-  | 'styled_html'
-  | 'structured_html'
-  | 'html_table'
-  | 'tsv_table'
-  | 'csv_table'
-  | 'json_data'
-  | 'yaml_data'
-  | 'toml_data'
-  | 'source_code'
-  | 'email_text'
-  | 'address'
-  | 'ocr_result'
-  | 'unknown';
+  | "plain_text"
+  | "pdf_text"
+  | "styled_html"
+  | "structured_html"
+  | "html_table"
+  | "tsv_table"
+  | "csv_table"
+  | "json_data"
+  | "yaml_data"
+  | "toml_data"
+  | "source_code"
+  | "email_text"
+  | "address"
+  | "date_text"
+  | "phone_number"
+  | "url_text"
+  | "path_text"
+  | "color_code"
+  | "math_expression"
+  | "md_text"
+  | "text_with_links"
+  | "ocr_result"
+  | "multi_clipboard"
+  | "paste_queue"
+  | "unknown";
 
 export interface DetectionResult {
   type: ContentType;
@@ -31,24 +41,25 @@ export interface ClipboardContent {
 export interface CleanResult {
   cleaned: string;
   securityAlert: SecurityAlert | null;
+  appliedTransforms?: string[];
   error?: unknown;
 }
 
-export type MaskMode = 'full' | 'partial' | 'skip';
+export type MaskMode = "full" | "partial" | "skip";
 
 export interface SensitiveMatch {
   type:
-    | 'email'
-    | 'phone_id'
-    | 'phone_intl'
-    | 'nik'
-    | 'credit_card'
-    | 'npwp'
-    | 'passport_id'
-    | 'bank_account'
-    | 'ip_address'
-    | 'aws_key'
-    | 'custom';
+    | "email"
+    | "phone_id"
+    | "phone_intl"
+    | "nik"
+    | "credit_card"
+    | "npwp"
+    | "passport_id"
+    | "bank_account"
+    | "ip_address"
+    | "aws_key"
+    | "custom";
   value: string;
   startIndex: number;
   endIndex: number;
@@ -89,8 +100,13 @@ export interface AppSettings {
   general: {
     startOnBoot: boolean;
     minimizeToTray: boolean;
-    language: 'id' | 'en';
-    theme: 'light' | 'dark' | 'system';
+    startHidden: boolean;
+    autoCleanOnCopy: boolean;
+    language: "id" | "en";
+    theme: "light" | "dark" | "system";
+    hasSeenOnboarding: boolean;
+    enableContextMenu: boolean;
+    contextMenuMode?: "top_level" | "submenu";
   };
   hotkeys: {
     pasteClean: string;
@@ -98,6 +114,8 @@ export interface AppSettings {
     multiCopy: string;
     queueToggle: string;
     historyOpen: string;
+    commandPalette?: string;
+    undoLastPaste?: string;
   };
   presets: {
     active: string;
@@ -107,7 +125,8 @@ export interface AppSettings {
     detectSensitive: boolean;
     autoClear: boolean;
     clearTimerSeconds: number;
-    maskMode: Exclude<MaskMode, 'skip'>;
+    maskMode: Exclude<MaskMode, "skip">;
+    unknownContextAction: "allow" | "warn" | "block";
   };
   history: {
     enabled: boolean;
@@ -116,9 +135,19 @@ export interface AppSettings {
   };
   ai: {
     enabled: boolean;
-    provider: 'local' | 'openai' | 'gemini';
+    provider:
+      | "local"
+      | "openai"
+      | "gemini"
+      | "anthropic"
+      | "deepseek"
+      | "xai"
+      | "custom";
     apiKey?: string;
+    baseUrl?: string;
+    model?: string;
     autoDetect: boolean;
+    aiMode?: "auto" | "fix_grammar" | "summarize" | "formalize" | "rephrase";
   };
   ocr: {
     languages: string[];
@@ -129,9 +158,65 @@ export interface AppSettings {
     deviceId: string;
     pairedDevices: { id: string; name: string }[];
   };
-  license: {
-    tier: 'free' | 'pro' | 'ultimate';
-    key?: string;
-    activatedAt?: string;
+  appFilter?: {
+    mode: "whitelist" | "blacklist" | "off";
+    apps: string[];
   };
+  appProfiles?: Array<{
+    appName: string;
+    cleanMode: "plain" | "code" | "email" | "doc" | "default";
+    autoTranslate?: boolean;
+    targetLang?: "id" | "en";
+  }>;
+  automation?: {
+    trustModeDefault: "strict" | "balanced" | "passthrough";
+    appTrustModes: Array<{
+      appName: string;
+      mode: "strict" | "balanced" | "passthrough";
+    }>;
+    enableUniversalFallback: boolean;
+    enablePastePreview: boolean;
+    previewHoldMs: number;
+    enableCommandPalette: boolean;
+    enableIntentFieldDetection: boolean;
+    enableSmartUrlTransform: boolean;
+    enableLocaleAwareness: boolean;
+    enableHealthGuard: boolean;
+    enableAutoLearning: boolean;
+    enableRecipes: boolean;
+    enableUndo: boolean;
+    sessionClusterMinutes: number;
+    paletteFavorites?: Array<{
+      appName: string;
+      presets: string[];
+    }>;
+  };
+  privacy?: {
+    enableEphemeralSensitiveClips: boolean;
+    sensitiveTtlSeconds: number;
+    sensitiveAllowlistApps: string[];
+    enablePrivacyFirewall: boolean;
+    neverPersistSensitive: boolean;
+  };
+  diagnostics?: {
+    observabilityEnabled: boolean;
+    maxEvents: number;
+  };
+  recipes?: Array<{
+    id: string;
+    sourceApp?: string;
+    targetApp?: string;
+    contentType?: ContentType;
+    preset: string;
+    enabled: boolean;
+  }>;
+  autoLearnedRules?: Array<{
+    id: string;
+    appName: string;
+    contentType: ContentType;
+    suggestedPreset: string;
+    confidence: number;
+    count: number;
+    updatedAt: string;
+  }>;
 }

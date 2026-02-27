@@ -14,3 +14,7 @@ export function listPlugins(): PluginRecord[] {
 export function addPlugin(plugin: PluginRecord): void {
   registry.push(plugin);
 }
+
+export function clearPlugins(): void {
+  registry.length = 0;
+}

@@ -9,21 +9,28 @@ directories:
 files:
   - dist/**/*
   - package.json
+  - logo.png
 
 win:
+  signAndEditExecutable: false
   target:
     - target: nsis
-      arch: [x64, arm64]
+      arch: [x64]
     - target: portable
+      arch: [x64]
   icon: assets/icons/icon.ico
-  artifactName: SmartPasteHub-${version}-${arch}.${ext}
+  forceCodeSigning: false
 
 nsis:
+  artifactName: SmartPasteHub-${version}-${arch}-setup.${ext}
   oneClick: false
   perMachine: false
   allowToChangeInstallationDirectory: true
   installerIcon: assets/icons/icon.ico
   uninstallerIcon: assets/icons/icon.ico
+
+portable:
+  artifactName: SmartPasteHub-${version}-${arch}-portable.${ext}
 
 mac:
   target:
@@ -44,13 +51,12 @@ linux:
   icon: assets/icons
   category: Utility
   desktop:
-    StartupWMClass: SmartPasteHub
+    entry: "StartupWMClass=SmartPasteHub"
 
 publish:
   provider: github
   owner: smartpastehub
   repo: smartpastehub
 
-autoUpdate:
-  enabled: true
-  channel: latest
+# autoUpdate is handled at runtime via electron-updater, not electron-builder config
+# See src/main/index.ts for updater initialization

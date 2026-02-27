@@ -1,0 +1,312 @@
+# 🔄 Proposal Redesign SmartPasteHub
+
+> **Tujuan awal dipertahankan:** Menjadi asisten clipboard cerdas yang membersihkan format, mendeteksi data sensitif, dan meningkatkan produktivitas copy-paste.
+
+---
+
+## Masalah pada Arsitektur Saat Ini
+
+| Area | Masalah | Dampak |
+|------|---------|--------|
+| **Cleaning Pipeline** | Satu alur linier, tidak bisa di-extend | Sulit menambahkan transformasi baru tanpa mengubah [cleaner.ts](file:///c:/Users/USER/Downloads/smartpastehub/src/core/cleaner.ts) |
+| **IPC Handlers** | 1 file monolitik 256 baris, 25+ channel | Sulit di-maintain, semua logic bergantung satu file |
+| **Database** | Raw SQL tersebar di [ipc-handlers.ts](file:///c:/Users/USER/Downloads/smartpastehub/src/main/ipc-handlers.ts) | Tidak ada abstraksi, rentan SQL injection, sulit unit test |
+| **OCR & Sync** | Stub/placeholder, belum berfungsi | Fitur dijanjikan tapi belum bisa dipakai |
+| **Plugin System** | API ada tapi tidak terhubung ke pipeline | Plugin tidak punya akses ke proses cleaning |
+| **Frontend** | Hanya 3 halaman sederhana | Tidak ada dashboard, analytics, atau drag-drop reorder |
+| **Security** | Auto-clear hanya timer, tidak context-aware | Tidak mengenali konteks aplikasi tujuan |
+| **State Management** | Tidak ada global store di frontend yang terstruktur | Setiap page fetch sendiri, tidak ada caching |
+| **Error Handling** | [safeHandle](file:///c:/Users/USER/Downloads/smartpastehub/src/main/ipc-handlers.ts#17-46) catch-all, tanpa retry | Error hanya di-log, user tidak punya opsi recovery |
+| **Testing** | Minimal, coverage rendah | Refactoring berisiko tinggi |
+
+---
+
+## Rancangan Baru yang Diusulkan
+
+### 1. 🧩 Pipeline-Based Cleaning (Middleware Pattern)
+
+**Sebelum:** Cleaning pipeline hardcoded dalam if-else di [cleaner.ts](file:///c:/Users/USER/Downloads/smartpastehub/src/core/cleaner.ts)
+
+**Sesudah:** Setiap transformasi menjadi "middleware" independen yang bisa disusun ulang oleh user
+
+```
+Clipboard Input
+  ↓
+[Detect Content Type]
+  ↓
+[Pipeline: kumpulan middleware yang dipilih user]
+  ├── HTML Stripper (optional)
+  ├── Line Break Fixer (optional)  
+  ├── Table Converter (optional)
+  ├── Whitespace Normalizer (always)
+  ├── Regex Rules (user-defined)
+  ├── AI Rewriter (optional)
+  └── Custom Plugin (user-installed)
+  ↓
+[Security Scanner]
+  ↓
+Cleaned Output
+```
+
+**Manfaat:**
+- User bisa mengatur urutan dan memilih transformasi mana yang aktif
+- Plugin bisa menyisipkan middleware ke pipeline
+- Mudah di-test: setiap middleware diuji secara terpisah
+
+---
+
+### 2. 🗄️ Repository Pattern untuk Database
+
+**Sebelum:** Raw SQL langsung di [ipc-handlers.ts](file:///c:/Users/USER/Downloads/smartpastehub/src/main/ipc-handlers.ts)
+
+**Sesudah:** Buat layer repository terpisah per entitas
+
+```
+src/
+  repositories/
+    clipboard-history.repo.ts   → CRUD clipboard_history
+    snippets.repo.ts             → CRUD snippets
+    templates.repo.ts            → CRUD templates  
+    context-rules.repo.ts        → CRUD context_rules
+    regex-rules.repo.ts          → CRUD regex_rules
+    usage-stats.repo.ts          → analytics queries
+```
+
+**Manfaat:**
+- IPC handler hanya berisi routing, bukan business logic
+- Repository bisa di-mock untuk unit testing
+- Query terpusat, mudah dioptimasi
+
+---
+
+### 3. 📡 Modular IPC Handlers
+
+**Sebelum:** 1 file besar [ipc-handlers.ts](file:///c:/Users/USER/Downloads/smartpastehub/src/main/ipc-handlers.ts) dengan 25+ channel
+
+**Sesudah:** Pisahkan berdasarkan domain
+
+```
+src/main/ipc/
+  clipboard.ipc.ts    → clipboard:paste, clipboard:write, clipboard:detect
+  history.ipc.ts      → history:list, history:pin, history:delete
+  snippet.ipc.ts      → snippet:list, snippet:create, snippet:update, snippet:delete
+  template.ipc.ts     → template:list, template:fill, template:create, template:delete
+  security.ipc.ts     → security:scan, security:mask
+  ai.ipc.ts           → ai:rewrite
+  ocr.ipc.ts          → ocr:recognize
+  productivity.ipc.ts → queue:*, multi:*
+  settings.ipc.ts     → settings:get, settings:update
+  index.ts            → registerAll() yang memanggil semua di atas
+```
+
+---
+
+### 4. 🖥️ Redesign Frontend: Dashboard + Float Popup
+
+**Sebelum:** 3 halaman statis (Paste, History, Settings)
+
+**Sesudah:** 5+ halaman dengan dashboard analytics dan floating popup
+
+```
+Halaman baru:
+├── 📊 Dashboard (statistik: berapa paste/hari, tipe konten favorit, chart)
+├── 📋 Smart Paste (tetap, tapi lebih interaktif)
+├── 📜 History (+ filter by type, date range, bulk actions)
+├── 📝 Snippets & Templates (manajemen snippet terpisah dari paste)
+├── 🔌 Plugins (marketplace mini + toggle on/off)
+└── ⚙️ Settings (lebih terorganisir dengan tab/accordion)
+
+Floating Popup (terpisah dari main window):
+├── Muncul otomatis dekat cursor saat copy terdeteksi
+├── Pilihan cepat: "Paste Bersih", "Paste Original", "Simpan ke Snippet"
+└── Preview singkat content + badge tipe konten
+```
+
+---
+
+### 5. 🔐 Context-Aware Security
+
+**Sebelum:** Auto-clear hanya berdasarkan timer
+
+**Sesudah:** Keputusan cerdas berdasarkan konteks
+
+```
+Jika konten = data sensitif (KTP, Credit Card):
+  ├── Jika target app = Chat (WhatsApp, Telegram) → BLOKIR + warn keras
+  ├── Jika target app = Teks editor pribadi → Izinkan + remind  
+  ├── Jika target app = Browser (form input) → Izinkan + auto-clear setelah paste
+  └── Auto-clear setelah 30 detik jika tidak di-paste
+```
+
+---
+
+### 6. 🌐 Implementasi Sync yang Benar-benar Berfungsi
+
+**Sebelum:** Stub/placeholder, WebSocket tidak terhubung
+
+**Sesudah:** Arsitektur sync end-to-end
+
+```
+Pairing Flow:
+  Desktop → Generate QR (berisi relay URL + AES-256 key)
+  Mobile → Scan QR → Simpan key di secure storage
+  
+Sync Flow:
+  Device A copy → encrypt → WebSocket → Relay Server → WebSocket → Device B
+  Device B → decrypt → tulis ke clipboard lokal → notifikasi
+  
+Relay Server (Cloudflare Worker):
+  Hanya relay, TIDAK bisa membaca isi (end-to-end encrypted)
+  Room-based: tiap pasangan device punya room ID unik
+```
+
+---
+
+### 7. 🧪 Testing Strategy yang Kokoh
+
+**Sebelum:** Minimal test, hanya beberapa unit test
+
+**Sesudah:** 3 layer testing
+
+```
+Unit Tests (Vitest):
+  ├── Setiap middleware di pipeline
+  ├── Setiap repository  
+  ├── Security scanner patterns
+  └── Converter functions
+
+Integration Tests:
+  ├── IPC handler → repository → database
+  ├── Cleaning pipeline end-to-end
+  └── Settings read/write cycle
+
+E2E Tests (Playwright):
+  ├── Onboarding flow
+  ├── Copy → auto-detect → paste bersih
+  ├── History search & pin
+  └── Settings perubahan hotkey
+```
+
+---
+
+### 8. 🔌 Plugin System yang Benar-benar Berguna
+
+**Sebelum:** Plugin API ada tapi tidak terhubung ke pipeline
+
+**Sesudah:** Plugin bisa:
+
+```
+Plugin Capabilities:
+  ├── Menambah middleware ke cleaning pipeline
+  ├── Menambah custom content detector
+  ├── Menambah custom security pattern
+  ├── Menambah halaman baru ke sidebar
+  └── Menambah aksi ke floating popup
+
+Contoh Plugin:
+  ├── "Jira Formatter" → otomatis format issue key jadi link
+  ├── "Code Beautifier" → pretty-print JSON/XML sebelum paste
+  ├── "Translation" → auto-translate sebelum paste
+  └── "Slack Emoji Cleaner" → hapus emoji dari Slack copy
+```
+
+---
+
+## Struktur Folder yang Diusulkan
+
+```
+src/
+├── main/                        # Electron Main Process
+│   ├── index.ts                 # Bootstrap
+│   ├── windows/                 # Window management
+│   │   ├── main-window.ts
+│   │   └── floating-popup.ts
+│   ├── ipc/                     # Modular IPC handlers
+│   │   ├── clipboard.ipc.ts
+│   │   ├── history.ipc.ts
+│   │   ├── snippet.ipc.ts
+│   │   └── ...
+│   ├── services/                # Business logic
+│   │   ├── clipboard-watcher.ts
+│   │   ├── hotkey-manager.ts
+│   │   ├── tray-manager.ts
+│   │   └── auto-updater.ts
+│   ├── repositories/            # Database abstraction
+│   │   ├── base.repo.ts
+│   │   ├── history.repo.ts
+│   │   └── ...
+│   └── database/
+│       ├── connection.ts
+│       └── migrations/          # Versioned migrations
+│
+├── pipeline/                    # Cleaning Pipeline (Middleware)
+│   ├── pipeline-runner.ts       # Orchestrator
+│   ├── middlewares/
+│   │   ├── html-stripper.mw.ts
+│   │   ├── line-break-fixer.mw.ts
+│   │   ├── table-converter.mw.ts
+│   │   ├── whitespace-normalizer.mw.ts
+│   │   ├── regex-transformer.mw.ts
+│   │   └── ai-rewriter.mw.ts
+│   └── types.ts
+│
+├── security/                    # Security Module
+│   ├── scanner.ts
+│   ├── masker.ts
+│   ├── patterns/                # Pattern per kategori
+│   │   ├── indonesia.ts         # NIK, NPWP, HP Indo
+│   │   ├── financial.ts         # Credit Card, Bank
+│   │   └── tech.ts              # AWS Key, IP, API Token
+│   └── context-guard.ts         # Context-aware decisions
+│
+├── plugins/                     # Plugin System
+│   ├── plugin-api.ts
+│   ├── plugin-loader.ts
+│   ├── plugin-registry.ts
+│   └── builtin/                 # Built-in plugins
+│
+├── sync/                        # Cross-Device Sync
+│   ├── sync-manager.ts
+│   ├── encryption.ts
+│   ├── pairing.ts
+│   └── relay-client.ts
+│
+├── renderer/                    # React Frontend
+│   ├── App.tsx
+│   ├── pages/
+│   │   ├── DashboardPage.tsx
+│   │   ├── SmartPastePage.tsx
+│   │   ├── HistoryPage.tsx
+│   │   ├── SnippetsPage.tsx
+│   │   ├── PluginsPage.tsx
+│   │   └── SettingsPage.tsx
+│   ├── components/
+│   ├── stores/                  # Zustand global state
+│   ├── hooks/
+│   └── styles/
+│
+└── shared/                      # Shared types & utils
+    ├── types.ts
+    ├── constants.ts
+    ├── logger.ts
+    └── ipc-channels.ts          # Single source of truth untuk channel names
+```
+
+---
+
+## Ringkasan Perubahan
+
+| Aspek | Sekarang | Setelah Redesign |
+|-------|----------|------------------|
+| Cleaning | Hardcoded if-else | Middleware pipeline yang bisa disusun ulang |
+| Database | Raw SQL di IPC handler | Repository pattern terpisah |
+| IPC | 1 file monolitik | Modular per domain |
+| Frontend | 3 halaman statis | 6 halaman + floating popup + dashboard |
+| Security | Timer-based auto-clear | Context-aware + target-app detection |
+| Plugin | API tanpa koneksi | Middleware injection + UI extension |
+| Sync | Stub/placeholder | Fully working E2E encrypted sync |
+| Testing | Minimal | Unit + Integration + E2E |
+| Error | Catch-all silent | Retry mechanism + user recovery options |
+
+> [!IMPORTANT]
+> Semua perubahan ini TIDAK mengubah tujuan awal aplikasi. SmartPasteHub tetap menjadi **asisten clipboard cerdas**. Yang berubah adalah **bagaimana ia bekerja di balik layar** agar lebih modular, testable, dan extensible.

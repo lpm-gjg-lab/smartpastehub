@@ -30,4 +30,16 @@ export const PRESETS: PresetDefinition[] = [
     label: 'Markdown Table',
     transforms: ['tableToMarkdown'],
   },
+  {
+    // source_code, json, yaml, toml — unicode-clean only, no whitespace changes
+    id: 'codePassthrough',
+    label: 'Code / Data Passthrough',
+    transforms: ['unicodeClean'],
+  },
+  {
+    // email body — strip quoted reply + trailing junk + unicode clean
+    id: 'emailClean',
+    label: 'Email Clean',
+    transforms: ['emailClean', 'normalizeWhitespace'],
+  },
 ];

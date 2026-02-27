@@ -1,10 +1,152 @@
 # Smart Paste Hub
 
-Smart Paste Hub is an Electron + React clipboard formatter app based on `docs/` specifications.
+A Windows desktop clipboard manager built with Electron + React + TypeScript. Automatically cleans, formats, and transforms clipboard content when you paste — with smart context awareness that adapts behavior based on which app you copied from and which app you're pasting into.
+
+## Features
+
+- **Auto-clean on paste** — triggered by global hotkey (`Alt+Shift+V` by default), runs silently in the background
+- **Smart context rules** — detects copy source and paste target app, applies the right preset automatically (e.g. code from VS Code → terminal stays as-is, email from Outlook → strips quoted replies)
+- **20+ content types detected** — plain text, source code, JSON/YAML/TOML, HTML, CSV/TSV tables, email, PDF text, URLs, phone numbers, addresses, and more
+- **Unicode safety net** — fixes mojibake, NBSP, smart quotes, zero-width characters, soft hyphens, CRLF, and fullwidth ASCII on every paste
+- **Email cleaner** — strips quoted reply headers, trailing newsletter footers, and collapses excessive blank lines
+- **Code passthrough** — source code and structured data (JSON, YAML, TOML) are never whitespace-normalized
+- **AI rewrite** — fix grammar, rephrase, formalize, summarize, translate, bullet list, and more (requires API key)
+- **OCR** — screenshot-to-text via global hotkey
+- **Multi-copy** — collect multiple clipboard items and merge them
+- **Paste queue** — enqueue multiple items, paste them one at a time
+- **Clipboard ring** — browse recent clipboard history
+- **Security scanner** — detect and mask PII (API keys, emails, phone numbers, etc.)
+- **Plugin runtime (internal)** — core plugin runtime exists for built-in pipeline hooks; public plugin marketplace/UI is still planned
+- **HUD toasts** — non-intrusive floating notifications show what was applied on each paste
+
+## How It Works
+
+```
+Copy text from any app
+        ↓
+Global hotkey (Alt+Shift+V) triggers paste flow
+        ↓
+Context rule matched? → apply preset override
+        ↓
+Pipeline runs middlewares in order:
+  1. unicode-cleaner   (always — fixes encoding issues)
+  2. html-stripper     (if HTML clipboard data present)
+  3. line-break-fixer  (PDF-style wrapped lines)
+  4. table-converter   (CSV / TSV / HTML table → Markdown)
+  5. email-cleaner     (strips quoted replies and junk)
+  6. whitespace-normalizer (collapses extra spaces — skipped for code/data)
+  7. regex-transformer (user-defined find/replace rules)
+  8. ai-rewriter       (optional, requires AI provider)
+        ↓
+Cleaned text auto-pasted into target app
+HUD toast shows what was applied
+```
+
+## Getting Started
+
+```bash
+npm install
+npm run dev:desktop
+```
+
+To run each process manually:
+
+```bash
+npm run dev:renderer -- --host 127.0.0.1 --port 5173 --strictPort
+npm run dev:main
+npm run dev:electron
+```
+
+## Build Installer
+
+```bash
+# Build renderer + main, then package Windows NSIS installer + portable exe
+npm run build && npm run package:win
+# Output: release/SmartPasteHub-0.1.0-x64.exe
+```
+
+## Quality Checks
+
+```bash
+npm run typecheck      # TypeScript — main + renderer (0 errors)
+npm run test           # Vitest unit tests (current suite)
+npm run test:e2e       # Playwright E2E smoke tests (5 tests)
+npm run build          # Production build
+npm run lint           # ESLint
+```
+
+## Key Paths
+
+```
+src/
+├── main/
+│   ├── index.ts                     # Main process — hotkey, clipboard watcher, paste flow
+│   ├── hud-manager.ts               # Floating HUD toast window
+│   ├── ipc/                         # IPC handlers (clipboard, AI, OCR, security, history…)
+│   └── repositories/                # SQLite repositories (history, context rules, snippets)
+├── core/
+│   ├── cleaner.ts                   # Top-level cleanContent() entry point
+│   ├── content-detector.ts          # Detects 20+ content types from text/HTML
+│   ├── context-rules.ts             # Smart context rules + DEFAULT_RULES
+│   ├── presets.ts                   # Clean presets (default, codePassthrough, emailClean…)
+│   ├── unicode-cleaner.ts           # Unicode sanitizer (mojibake, NBSP, smart quotes…)
+│   ├── email-cleaner.ts             # Email reply/footer stripper
+│   └── pipeline/
+│       ├── default-pipeline.ts      # Ordered middleware stack
+│       ├── pipeline-runner.ts       # Runs middlewares, tracks appliedTransforms
+│       └── middlewares/             # Individual middleware modules
+├── renderer/
+│   ├── App.tsx                      # App shell + tab routing
+│   ├── pages/                       # SmartPastePage, HistoryPage, SettingsPage, DashboardPage
+│   └── components/                  # SmartPasteZone, ResultPanel, Toast, AppSidebar…
+├── plugins/
+│   ├── plugin-api.ts                # SmartPastePlugin interface
+│   ├── plugin-runtime.ts            # Hook registration + transform middleware bridge
+│   └── builtin/                     # Built-in plugins (zero-width-cleaner)
+└── security/
+    ├── sensitive-detector.ts        # PII pattern detection
+    ├── context-guard.ts             # Paste context safety checks
+    └── data-masker.ts               # Full / partial masking
+```
+
+## Plugin Status
+
+- Runtime + built-in plugin hooks are implemented in `src/plugins/`.
+- Public plugin catalog/installation UI is not yet released (currently marked planned in-app).
+- Treat plugin extensibility as developer/internal capability for now.
+
+## Default Hotkeys
+
+| Hotkey              | Action                                             |
+| ------------------- | -------------------------------------------------- |
+| `Alt+Shift+V`       | Smart paste (clean + paste)                        |
+| `Ctrl+Alt+H`        | Open history ring                                  |
+| `Ctrl+Alt+S`        | OCR screenshot → clipboard                         |
+| `Shift+PrintScreen` | OCR screenshot → clipboard                         |
+| `Ctrl+Alt+C`        | Start multi-copy collection                        |
+| `Ctrl+Alt+G`        | Ghost write (type cleaned text into active window) |
+| `Ctrl+Alt+T`        | Translate clipboard                                |
+
+All hotkeys are configurable in Settings.
+
+## Smart Context Rules (Default)
+
+| Rule                     | Copy source                    | Paste target                        | Preset applied    |
+| ------------------------ | ------------------------------ | ----------------------------------- | ----------------- |
+| `to-terminal-code`       | any                            | `WindowsTerminal.exe` + source_code | `codePassthrough` |
+| `to-terminal-json`       | any                            | `WindowsTerminal.exe` + json_data   | `codePassthrough` |
+| `from-outlook-email`     | `OUTLOOK.EXE` + email_text     | any                                 | `emailClean`      |
+| `from-thunderbird-email` | `thunderbird.exe` + email_text | any                                 | `emailClean`      |
+
+Custom rules can be added via the Settings → Context Rules panel.
+
+## IPC Architecture
+
+All renderer → main communication goes through `invokeIPC()` from `src/renderer/lib/ipc.ts`, guarded by `hasSmartPasteBridge()`. Never call `window.smartpaste.invoke()` directly.
+
+Main process registers all IPC handlers in `src/main/ipc/index.ts` using a `safeHandle()` wrapper that logs errors and returns structured responses.
 
 ## Open Source Standards
-
-This repository now includes baseline project governance:
 
 - License: `LICENSE`
 - Contribution guide: `CONTRIBUTING.md`
@@ -14,64 +156,8 @@ This repository now includes baseline project governance:
 - Community templates: `.github/ISSUE_TEMPLATE/`, `.github/pull_request_template.md`
 - Security automation: CodeQL, dependency review, and Dependabot workflows
 
-## Current Status
-
-- Desktop app scaffold is functional
-- Core cleaning pipeline is implemented
-- Settings/History/Snippets pages are connected to IPC/database
-- Quick clean workflow is available in Settings
-- Unit tests, lint, typecheck, build, and E2E smoke test pass
-
-## Run (Normal Node.js)
-
-```bash
-npm install
-npm run dev:desktop
-```
-
-If you want to run each process manually:
-
-```bash
-npm run dev:renderer -- --host 127.0.0.1 --port 5173 --strictPort
-npm run dev:main
-npm run dev:electron
-```
-
-## Run (Portable Node 20 in this repository)
-
-```bash
-export PATH="$PWD/.tools/node-v20.19.0-win-x64:$PATH"
-./.tools/node-v20.19.0-win-x64/node.exe ./.tools/node-v20.19.0-win-x64/node_modules/npm/bin/npm-cli.js install
-./.tools/node-v20.19.0-win-x64/node.exe ./.tools/node-v20.19.0-win-x64/node_modules/npm/bin/npm-cli.js run dev:desktop
-```
-
-## Quality Checks
-
-```bash
-npm run lint
-npm run typecheck
-npm run test
-npm run build
-npm run test:e2e
-```
-
-## Recommended Contributor Flow
-
-1. Create branch: `feat/<name>` or `fix/<name>`
-2. Implement change and tests
-3. Run quality checks
-4. Open PR and complete checklist
-
 ## Security Notes
 
 - Do not commit secrets in any file.
-- Use private reporting channel in `SECURITY.md` for vulnerabilities.
-- IPC and desktop integrations should be validated and least-privilege.
-
-## Key Paths
-
-- Desktop main process: `src/main/index.ts`
-- Renderer app shell: `src/renderer/App.tsx`
-- Core cleaning engine: `src/core/cleaner.ts`
-- Security scanner/masking: `src/security/`
-- SQLite schema/init: `src/main/db.ts`
+- Use the private reporting channel in `SECURITY.md` for vulnerabilities.
+- IPC handlers validate all inputs; desktop integrations follow least-privilege.

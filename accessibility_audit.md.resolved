@@ -1,0 +1,121 @@
+# ♿ Audit Aksesibilitas: Toast & Pop Up SmartPasteHub
+
+---
+
+## Ringkasan Temuan
+
+| Komponen | ARIA | Keyboard Nav | Focus Trap | Escape Key | Skor |
+|---|---|---|---|---|---|
+| **Toast.tsx** (main window) | ✅ `role`, `aria-live`, `aria-label` | ❌ | ❌ | ❌ | 🟡 40% |
+| **ToastApp.tsx** (floating toast) | ❌ Tidak ada sama sekali | ❌ | ❌ | ❌ | 🔴 0% |
+| **ToastActionBar.tsx** | ❌ Tidak ada | ❌ | ❌ | ❌ | 🔴 0% |
+| **ToastHeader.tsx** | ❌ Tidak ada | ❌ | ❌ | ❌ | 🔴 0% |
+| **FloatingWindowShell.tsx** | ❌ Tidak ada | ❌ | ❌ | ❌ | 🔴 0% |
+| **Onboarding.tsx** | ❌ Tidak ada | ❌ | ❌ | ❌ | 🔴 0% |
+| **AppSidebar.tsx** | ✅ `role=menu/menuitem`, `aria-label` | ✅ Arrow keys | ❌ | ❌ | 🟢 70% |
+| **HistoryPage.tsx** | ✅ 3x `aria-label` | ❌ | ❌ | ❌ | 🟡 30% |
+
+---
+
+## Masalah Kritis Per Komponen
+
+### 1. ToastApp.tsx (Floating Toast Window) — **Skor: 0%**
+
+Komponen ini adalah **notifikasi utama** yang muncul saat user meng-copy sesuatu, tapi **tidak memiliki aksesibilitas sama sekali**:
+
+| Masalah | Detail |
+|---|---|
+| Tidak ada `role="alert"` | Screen reader tidak tahu ini adalah notifikasi |
+| Tidak ada `aria-live` | Perubahan konten tidak diumumkan ke screen reader |
+| Tombol action tanpa `aria-label` | Tombol "🧮 Calculate" atau "📝 Summarize" hanya memiliki emoji — screen reader membaca "Tombol: abacus Calculate" |
+| Tidak ada keyboard navigation | User tidak bisa Tab antar tombol action |
+| Tidak ada Escape key | Tidak bisa dismiss toast dengan keyboard |
+| Tidak ada focus management | Saat muncul, focus tidak pindah ke toast |
+
+### 2. FloatingWindowShell.tsx — **Skor: 0%**
+
+Shell yang membungkus semua floating window (History popup, Settings popup, Template form):
+
+| Masalah | Detail |
+|---|---|
+| Tidak ada `role="dialog"` | Screen reader tidak tahu ini adalah dialog/modal |
+| Tidak ada `aria-modal="true"` | Tidak memberi tahu bahwa konten di belakang tidak interaktif |
+| Tidak ada `aria-labelledby` | Judul dialog tidak terhubung ke dialog secara semantik |
+| Tombol close hanya berisi "✕" | Screen reader membaca "Tombol: multiplication sign" — tidak ada `aria-label="Close"` |
+| Tidak ada Focus Trap | User bisa Tab keluar dari dialog ke konten di belakang |
+| Tidak ada Escape key handler | Tidak bisa tutup dialog dengan keyboard |
+
+### 3. Onboarding.tsx — **Skor: 0%**
+
+Modal welcome screen yang menutupi seluruh layar:
+
+| Masalah | Detail |
+|---|---|
+| Tidak ada `role="dialog"` | Ini modal tapi tidak dikenali sebagai dialog |
+| Tidak ada Focus Trap | User bisa Tab menembus overlay yang menutupi layar |
+| Tombol "Get Started" tidak auto-focus | Screen reader user tidak tahu harus tekan apa |
+| Tidak ada Escape key | Tidak bisa melewati onboarding dengan keyboard |
+
+### 4. Toast.tsx (Main Window) — **Skor: 40%**
+
+Komponen ini **paling baik** dari sisi aksesibilitas, tapi masih kurang:
+
+| Sudah Ada ✅ | Belum Ada ❌ |
+|---|---|
+| `role="alert"` untuk warning/error | Tidak ada keyboard dismiss (Escape) |
+| `role="status"` untuk info/success | Tidak ada focus management |
+| `aria-live="assertive"` untuk urgent | Tidak ada `tabIndex` pada toast item |
+| `aria-live="polite"` untuk info | Tombol close kecil, sulit diklik (touch target) |
+| `aria-atomic="true"` | Timer auto-dismiss tidak bisa dipause on hover |
+| `aria-label` pada close button | |
+
+### 5. ToastActionBar.tsx — **Skor: 0%**
+
+Tombol-tombol aksi kontekstual (Summarize, Calculate, UPPERCASE, dll):
+
+| Masalah | Detail |
+|---|---|
+| Beberapa tombol hanya punya `title` tapi tidak `aria-label` | `title` tidak di-umumkan oleh semua screen reader |
+| Emoji sebagai label visual | "🧮 Calculate" — emoji bisa dibaca berbeda antar screen reader |
+| Tidak ada keyboard shortcut | Tombol-tombol ini harusnya bisa diakses dengan angka (1, 2, 3) |
+| State loading tanpa `aria-busy` | Saat "✨ Thinking..." tampil, screen reader tidak tahu sedang loading |
+
+---
+
+## Fitur-Fitur yang Tidak Bisa Diakses Tanpa Mouse
+
+| Aksi | Bisa via Keyboard? | Catatan |
+|---|---|---|
+| Dismiss toast | ❌ | Tidak ada Escape atau Tab → Enter |
+| Klik tombol action di Floating Toast | ❌ | Tidak ada tabIndex |
+| Tutup Floating Window | ❌ | Tidak ada Escape handler |
+| Navigate antar tombol di ToastActionBar | ❌ | Tidak ada Tab order |
+| Dismiss Onboarding | ❌ | Tombol tidak auto-focus |
+| Sidebar navigation | ✅ | Arrow Up/Down sudah ada |
+| Filter di History | ✅ | Input dan select bisa di-Tab |
+
+---
+
+## Rekomendasi Perbaikan
+
+### Prioritas 🔴 Tinggi (Harus Segera)
+
+1. **FloatingWindowShell**: Tambahkan `role="dialog"`, `aria-modal="true"`, `aria-labelledby`, focus trap, dan Escape key handler
+2. **ToastApp**: Tambahkan `role="alert"`, `aria-live="assertive"`, dan Escape to dismiss
+3. **Onboarding**: Tambahkan `role="dialog"`, auto-focus pada tombol "Get Started", dan focus trap
+4. **Semua tombol close "✕"**: Tambahkan `aria-label="Close"`
+
+### Prioritas 🟡 Sedang
+
+5. **ToastActionBar**: Tambahkan `aria-label` deskriptif pada setiap tombol, `aria-busy` saat loading
+6. **Toast auto-dismiss**: Pause timer saat hover/focus (agar user punya waktu membaca)
+7. **Keyboard shortcut**: Toast actions bisa diakses dengan angka (1=First action, 2=Second, dll)
+
+### Prioritas 🟢 Rendah
+
+8. **Reduced Motion**: Hormati `prefers-reduced-motion` untuk animasi toast masuk/keluar
+9. **High Contrast**: Pastikan toast terbaca di mode Windows High Contrast
+10. **Screen reader announcements**: Gunakan `aria-live` region di `#sr-announcer` yang sudah ada di [App.tsx](file:///c:/Users/USER/Downloads/smartpastehub/mobile/App.tsx) tapi **belum pernah digunakan**
+
+> [!IMPORTANT]
+> Elemen `<div id="sr-announcer" className="sr-only" aria-live="polite">` sudah ada di [App.tsx](file:///c:/Users/USER/Downloads/smartpastehub/mobile/App.tsx) tapi **isinya selalu kosong**. Ini harusnya dipakai untuk mengumumkan perubahan halaman, hasil operasi, dan feedback penting ke screen reader.

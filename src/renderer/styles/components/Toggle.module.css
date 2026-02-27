@@ -1,8 +1,11 @@
+/* ============================================================
+   Toggle.module.css — Premium toggle switch
+   ============================================================ */
 .toggle {
   position: relative;
   display: inline-block;
-  width: 40px;
-  height: 22px;
+  width: 44px;
+  height: 24px;
   flex-shrink: 0;
 }
 
@@ -12,43 +15,50 @@
   height: 0;
 }
 
-.slider {
+.track {
   position: absolute;
   cursor: pointer;
-  inset: 0;
-  background: var(--bg-surface);
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius-full);
-  transition:
-    background var(--transition-base),
-    border-color var(--transition-base);
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: var(--bg-elevated);
+  border: 1px solid var(--border-default);
+  transition: all var(--transition-base);
+  border-radius: 24px;
 }
 
-.slider::before {
-  content: '';
+.track::before {
   position: absolute;
+  content: "";
   height: 16px;
   width: 16px;
-  left: 2px;
-  bottom: 2px;
-  background: var(--text-tertiary);
+  left: 3px;
+  bottom: 3px;
+  background-color: var(--text-tertiary);
+  transition: all var(--transition-spring);
   border-radius: 50%;
-  transition:
-    transform var(--transition-spring),
-    background var(--transition-base);
+  box-shadow: var(--shadow-xs);
 }
 
-input:checked+.slider {
-  background: rgba(91, 110, 245, 0.2);
-  border-color: rgba(91, 110, 245, 0.3);
+input:checked+.track {
+  background: var(--gradient-primary);
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 10px var(--accent-glow);
 }
 
-input:checked+.slider::before {
-  transform: translateX(18px);
-  background: var(--accent-primary);
+input:checked+.track::before {
+  transform: translateX(20px);
+  background-color: #fff;
+  box-shadow: var(--shadow-sm);
 }
 
-input:focus-visible+.slider {
+input:focus-visible+.track {
   outline: 2px solid var(--accent-primary);
   outline-offset: 2px;
+}
+
+input:disabled+.track {
+  opacity: 0.4;
+  cursor: not-allowed;
 }

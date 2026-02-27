@@ -13,6 +13,7 @@ export class Database {
     this.db.pragma('mmap_size = 268435456');
     this.db.pragma('cache_size = -8000');
     this.initialize();
+    this.migrateSchema();
   }
 
   private initialize() {
@@ -105,6 +106,14 @@ export class Database {
     }
   }
 
+  private migrateSchema() {
+    // Add ai_mode column if it doesn't exist yet (safe migration)
+    try {
+      this.db.exec("ALTER TABLE clipboard_history ADD COLUMN ai_mode TEXT");
+    } catch {
+      // Column already exists — safe to ignore
+    }
+  }
   run(sql: string, params?: unknown[]) {
     return this.db.prepare(sql).run(params ?? []);
   }

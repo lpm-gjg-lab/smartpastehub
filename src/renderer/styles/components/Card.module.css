@@ -1,34 +1,15 @@
+/* ============================================================
+   Card.module.css — Generic card component
+   ============================================================ */
 .card {
-  background: var(--bg-tertiary);
-  border-radius: var(--radius-md);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
   padding: var(--space-lg);
-  border: 1px solid var(--glass-border);
-  transition:
-    border-color var(--transition-fast),
-    box-shadow var(--transition-base),
-    transform var(--transition-base);
-  animation: slideUp var(--transition-slow) ease-out both;
+  transition: all var(--transition-fast);
 }
 
 .card:hover {
-  border-color: var(--glass-border-hover);
+  border-color: var(--border-default);
   box-shadow: var(--shadow-sm);
-}
-
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: var(--space-md);
-}
-
-.title {
-  font-size: 0.9375rem;
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.content {
-  color: var(--text-secondary);
-  font-size: 0.875rem;
 }

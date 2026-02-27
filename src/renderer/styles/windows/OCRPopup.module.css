@@ -1,0 +1,78 @@
+.label {
+  font-size: 12px;
+  opacity: 0.82;
+}
+
+.image {
+  width: 100%;
+  border-radius: 8px;
+  border: 1px solid var(--border-subtle);
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--bg-tertiary) 75%, transparent);
+}
+
+.chips {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.chip {
+  border-radius: 6px;
+  border: 1px solid var(--border-default);
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  padding: 6px 10px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.chipActive {
+  border-color: var(--border-accent);
+  background: var(--accent-glow);
+}
+
+.select,
+.btn,
+.textarea,
+.fileInput {
+  border-radius: 8px;
+  border: 1px solid var(--border-default);
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  padding: 8px 10px;
+  font-size: 12px;
+}
+
+.btn {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.textarea {
+  min-height: 160px;
+  resize: vertical;
+}
+
+.error {
+  color: #ff8d8d;
+  font-size: 12px;
+}
+
+.meta {
+  font-size: 12px;
+  opacity: 0.72;
+}

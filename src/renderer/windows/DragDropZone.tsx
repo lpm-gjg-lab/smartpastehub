@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from "react";
+import { invokeIPC } from "../lib/ipc";
 
 interface ZoneItem {
   id: number;
@@ -6,24 +7,16 @@ interface ZoneItem {
   contentType: string;
 }
 
-declare global {
-  interface Window {
-    electronAPI?: {
-      invoke: (channel: string, payload?: unknown) => Promise<unknown>;
-    };
-  }
-}
-
 const BADGE_COLORS: Record<string, string> = {
-  plain_text: '#4a9eff',
-  code: '#a78bfa',
-  json: '#34d399',
-  url: '#f59e0b',
-  email: '#f87171',
+  plain_text: "#4a9eff",
+  code: "#a78bfa",
+  json: "#34d399",
+  url: "#f59e0b",
+  email: "#f87171",
 };
 
 function badgeColor(ct: string): string {
-  return BADGE_COLORS[ct] ?? '#9ca3af';
+  return BADGE_COLORS[ct] ?? "#9ca3af";
 }
 
 export default function DragDropZone() {
@@ -33,10 +26,13 @@ export default function DragDropZone() {
   const zoneRef = useRef<HTMLDivElement>(null);
 
   const loadItems = useCallback(async () => {
-    const res = (await window.electronAPI?.invoke('dragdrop:get-items')) as
-      | { data: ZoneItem[] }
-      | undefined;
-    setItems(res?.data ?? []);
+    try {
+      const nextItems = await invokeIPC<ZoneItem[]>("dragdrop:get-items");
+      setItems(nextItems ?? []);
+    } catch (err) {
+      console.error("Failed to load drag-drop items:", err);
+      setItems([]);
+    }
   }, []);
 
   useEffect(() => {
@@ -46,16 +42,16 @@ export default function DragDropZone() {
   /* ── External drop (from other apps) ── */
   const handleZoneDragOver = (e: React.DragEvent) => {
     e.preventDefault();
-    e.dataTransfer.dropEffect = 'copy';
+    e.dataTransfer.dropEffect = "copy";
   };
 
   const handleZoneDrop = async (e: React.DragEvent) => {
     e.preventDefault();
-    const text = e.dataTransfer.getData('text/plain');
+    const text = e.dataTransfer.getData("text/plain");
     if (!text) return;
-    await window.electronAPI?.invoke('dragdrop:add-item', {
+    await invokeIPC("dragdrop:add-item", {
       content: text,
-      contentType: 'plain_text',
+      contentType: "plain_text",
     });
     void loadItems();
   };
@@ -79,7 +75,7 @@ export default function DragDropZone() {
     const reordered = [...ids];
     reordered.splice(srcIdx, 1);
     reordered.splice(tgtIdx, 0, dragSrcId);
-    await window.electronAPI?.invoke('dragdrop:reorder', reordered);
+    await invokeIPC("dragdrop:reorder", reordered);
     setDragSrcId(null);
     setDragOverId(null);
     void loadItems();
@@ -92,59 +88,59 @@ export default function DragDropZone() {
 
   /* ── Actions ── */
   const handleCombine = async () => {
-    const res = (await window.electronAPI?.invoke('dragdrop:combine', {
-      separator: '\n',
-    })) as { data: string } | undefined;
-    if (res?.data) {
-      await navigator.clipboard.writeText(res.data);
+    const res = await invokeIPC<string>("dragdrop:combine", {
+      separator: "\n",
+    });
+    if (res) {
+      await navigator.clipboard.writeText(res);
     }
   };
 
   const handleCopyAll = async () => {
-    const combined = items.map((i) => i.content).join('\n');
+    const combined = items.map((i) => i.content).join("\n");
     await navigator.clipboard.writeText(combined);
   };
 
   const handleClear = async () => {
-    await window.electronAPI?.invoke('dragdrop:clear');
+    await invokeIPC("dragdrop:clear");
     void loadItems();
   };
 
-  const preview = (s: string) => (s.length > 60 ? s.slice(0, 60) + '…' : s);
+  const preview = (s: string) => (s.length > 60 ? s.slice(0, 60) + "…" : s);
 
   return (
     <div
       style={{
         width: 400,
         height: 500,
-        display: 'flex',
-        flexDirection: 'column',
-        background: 'rgba(15,15,25,0.95)',
-        backdropFilter: 'blur(16px)',
-        fontFamily: 'system-ui, sans-serif',
-        color: '#e0e0ef',
-        overflow: 'hidden',
+        display: "flex",
+        flexDirection: "column",
+        background: "var(--bg-tertiary)",
+        backdropFilter: "blur(16px)",
+        fontFamily: "var(--font-sans)",
+        color: "var(--text-primary)",
+        overflow: "hidden",
         borderRadius: 12,
-        border: '1px solid rgba(255,255,255,0.1)',
-        boxShadow: '0 12px 48px rgba(0,0,0,0.6)',
+        border: "1px solid var(--glass-border)",
+        boxShadow: "var(--shadow-lg)",
       }}
     >
       {/* Header */}
       <div
         style={{
-          padding: '10px 14px',
-          borderBottom: '1px solid rgba(255,255,255,0.08)',
+          padding: "10px 14px",
+          borderBottom: "1px solid var(--border-subtle)",
           fontWeight: 600,
           fontSize: 13,
-          display: 'flex',
-          alignItems: 'center',
+          display: "flex",
+          alignItems: "center",
           gap: 8,
         }}
       >
         <span>⬇</span>
         <span>Drag & Drop Zone</span>
-        <span style={{ marginLeft: 'auto', fontSize: 11, opacity: 0.5 }}>
-          {items.length} item{items.length !== 1 ? 's' : ''}
+        <span style={{ marginLeft: "auto", fontSize: 11, opacity: 0.5 }}>
+          {items.length} item{items.length !== 1 ? "s" : ""}
         </span>
       </div>
 
@@ -155,10 +151,10 @@ export default function DragDropZone() {
         onDrop={(e) => void handleZoneDrop(e)}
         style={{
           flex: 1,
-          overflowY: 'auto',
-          padding: items.length === 0 ? 0 : '6px 8px',
-          display: 'flex',
-          flexDirection: 'column',
+          overflowY: "auto",
+          padding: items.length === 0 ? 0 : "6px 8px",
+          display: "flex",
+          flexDirection: "column",
           gap: 4,
         }}
       >
@@ -166,10 +162,10 @@ export default function DragDropZone() {
           <div
             style={{
               flex: 1,
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
               opacity: 0.4,
               gap: 8,
             }}
@@ -189,45 +185,45 @@ export default function DragDropZone() {
               style={{
                 background:
                   dragOverId === item.id
-                    ? 'rgba(100,120,255,0.2)'
-                    : 'rgba(255,255,255,0.05)',
+                    ? "var(--accent-glow)"
+                    : "var(--glass-bg)",
                 borderRadius: 8,
-                padding: '8px 10px',
+                padding: "8px 10px",
                 border:
                   dragOverId === item.id
-                    ? '1px solid rgba(100,120,255,0.5)'
-                    : '1px solid rgba(255,255,255,0.07)',
-                cursor: 'grab',
-                display: 'flex',
-                alignItems: 'flex-start',
+                    ? "1px solid var(--border-accent)"
+                    : "1px solid var(--glass-border)",
+                cursor: "grab",
+                display: "flex",
+                alignItems: "flex-start",
                 gap: 8,
-                transition: 'background 0.12s',
+                transition: "background 0.12s",
               }}
             >
               {/* Drag handle */}
-              <span style={{ opacity: 0.35, fontSize: 14, userSelect: 'none' }}>
+              <span style={{ opacity: 0.35, fontSize: 14, userSelect: "none" }}>
                 ⠿
               </span>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div
                   style={{
                     fontSize: 12,
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
                   }}
                 >
                   {preview(item.content)}
                 </div>
                 <span
                   style={{
-                    display: 'inline-block',
+                    display: "inline-block",
                     marginTop: 4,
                     fontSize: 10,
-                    padding: '1px 6px',
+                    padding: "1px 6px",
                     borderRadius: 4,
                     background: badgeColor(item.contentType),
-                    color: '#fff',
+                    color: "#fff",
                   }}
                 >
                   {item.contentType}
@@ -241,33 +237,33 @@ export default function DragDropZone() {
       {/* Action bar */}
       <div
         style={{
-          padding: '8px 12px',
-          borderTop: '1px solid rgba(255,255,255,0.08)',
-          display: 'flex',
+          padding: "8px 12px",
+          borderTop: "1px solid var(--border-subtle)",
+          display: "flex",
           gap: 8,
         }}
       >
         {[
-          { label: 'Combine', onClick: handleCombine, primary: true },
-          { label: 'Copy All', onClick: handleCopyAll, primary: false },
-          { label: 'Clear', onClick: handleClear, primary: false },
+          { label: "Combine", onClick: handleCombine, primary: true },
+          { label: "Copy All", onClick: handleCopyAll, primary: false },
+          { label: "Clear", onClick: handleClear, primary: false },
         ].map(({ label, onClick, primary }) => (
           <button
             key={label}
             onClick={() => void onClick()}
             style={{
               flex: primary ? 2 : 1,
-              padding: '6px 0',
+              padding: "6px 0",
               borderRadius: 6,
-              border: 'none',
-              cursor: 'pointer',
+              border: "none",
+              cursor: "pointer",
               fontSize: 12,
               fontWeight: primary ? 600 : 400,
               background: primary
-                ? 'rgba(100,120,255,0.8)'
-                : 'rgba(255,255,255,0.08)',
-              color: '#fff',
-              transition: 'opacity 0.12s',
+                ? "var(--accent-primary)"
+                : "var(--glass-bg-hover)",
+              color: "#fff",
+              transition: "opacity 0.12s",
             }}
           >
             {label}

@@ -18,6 +18,44 @@ export const DEFAULT_RULES: ContextRule[] = [
     transforms: ['tableToMarkdown'],
     enabled: true,
   },
+  {
+    // Paste code/data into terminal — fullwidth + smart quotes must be cleaned
+    id: 'to-terminal-code',
+    name: 'Paste Code to Terminal -> Unicode Clean',
+    targetApp: 'WindowsTerminal.exe',
+    contentType: 'source_code',
+    preset: 'codePassthrough',
+    transforms: ['unicodeClean'],
+    enabled: true,
+  },
+  {
+    id: 'to-terminal-json',
+    name: 'Paste JSON/Data to Terminal -> Unicode Clean',
+    targetApp: 'WindowsTerminal.exe',
+    contentType: 'json_data',
+    preset: 'codePassthrough',
+    transforms: ['unicodeClean'],
+    enabled: true,
+  },
+  {
+    // Outlook — email body detected, strip quoted reply + junk
+    id: 'from-outlook-email',
+    name: 'Copy from Outlook -> Email Clean',
+    sourceApp: 'OUTLOOK.EXE',
+    contentType: 'email_text',
+    preset: 'emailClean',
+    transforms: ['emailClean', 'normalizeWhitespace'],
+    enabled: true,
+  },
+  {
+    id: 'from-thunderbird-email',
+    name: 'Copy from Thunderbird -> Email Clean',
+    sourceApp: 'thunderbird.exe',
+    contentType: 'email_text',
+    preset: 'emailClean',
+    transforms: ['emailClean', 'normalizeWhitespace'],
+    enabled: true,
+  },
 ];
 
 export function matchContextRule(

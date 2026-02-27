@@ -1,4 +1,5 @@
-import React, { ReactNode } from 'react';
+import React, { ReactNode, useEffect, useRef } from "react";
+import styles from "../styles/components/FloatingWindowShell.module.css";
 
 interface Props {
   title: string;
@@ -8,66 +9,81 @@ interface Props {
   height?: number | string;
 }
 
-export function FloatingWindowShell({ title, icon, children, width = '100vw', height = '100vh' }: Props) {
+export function FloatingWindowShell({
+  title,
+  icon,
+  children,
+  width = "100%",
+  height = "100%",
+}: Props) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const closeBtnRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    closeBtnRef.current?.focus();
+  }, []);
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === "Escape") {
+      e.preventDefault();
+      window.close();
+      return;
+    }
+
+    if (e.key !== "Tab" || !dialogRef.current) {
+      return;
+    }
+
+    const focusable = dialogRef.current.querySelectorAll<HTMLElement>(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+    );
+
+    if (focusable.length === 0) {
+      return;
+    }
+
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (!first || !last) {
+      return;
+    }
+    const active = document.activeElement as HTMLElement | null;
+
+    if (e.shiftKey && active === first) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && active === last) {
+      e.preventDefault();
+      first.focus();
+    }
+  };
+
   return (
     <div
-      style={{
-        width,
-        height,
-        display: 'flex',
-        flexDirection: 'column',
-        background: 'rgba(15,15,25,0.96)',
-        backdropFilter: 'blur(16px)',
-        fontFamily: 'system-ui, sans-serif',
-        color: '#e0e0ef',
-        overflow: 'hidden',
-        border: '1px solid rgba(255,255,255,0.1)',
-        boxShadow: '0 12px 48px rgba(0,0,0,0.6)',
-      }}
+      ref={dialogRef}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="floating-window-title"
+      onKeyDown={handleKeyDown}
+      className={styles.root}
+      style={{ width, height }}
     >
-      <div
-        style={{
-          padding: '10px 14px',
-          borderBottom: '1px solid rgba(255,255,255,0.08)',
-          fontWeight: 600,
-          fontSize: 13,
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          WebkitAppRegion: 'drag', // Makes the header draggable in Electron
-          userSelect: 'none'
-        } as React.CSSProperties}
-      >
-        <span>{icon && `${icon} `}{title}</span>
-        <button 
-          onClick={() => window.close()} 
-          style={{
-            background: 'transparent',
-            border: 'none',
-            color: 'rgba(255,255,255,0.5)',
-            cursor: 'pointer',
-            fontSize: '16px',
-            WebkitAppRegion: 'no-drag' // Allows clicking the button
-          } as React.CSSProperties}
-          onMouseOver={(e) => e.currentTarget.style.color = 'white'}
-          onMouseOut={(e) => e.currentTarget.style.color = 'rgba(255,255,255,0.5)'}
+      <div className={styles.header}>
+        <span id="floating-window-title" className={styles.title}>
+          {icon && `${icon} `}
+          {title}
+        </span>
+        <button
+          ref={closeBtnRef}
+          onClick={() => window.close()}
+          aria-label="Close window"
+          className={styles.closeBtn}
         >
           ✕
         </button>
       </div>
 
-      <div
-        style={{
-          flex: 1,
-          overflowY: 'auto',
-          padding: '10px 14px',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 10,
-        }}
-      >
-        {children}
-      </div>
+      <div className={styles.content}>{children}</div>
     </div>
   );
 }

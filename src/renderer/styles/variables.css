@@ -1,46 +1,21 @@
-/* Dark theme overrides */
-[data-theme='dark'] {
-  /* Surface — rich dark blue-grey */
-  --bg-primary: #111318;
-  --bg-secondary: #181b23;
-  --bg-tertiary: #1f222d;
-  --bg-elevated: #262a36;
-  --bg-surface: #2c3040;
+/* ============================================================
+   variables.css — Light mode overrides
+   All tokens are already defined in globals.css under [data-theme='light']
+   This file is kept for any extra overrides not in globals.css
+   ============================================================ */
 
-  /* Text — high contrast */
-  --text-primary: #f0f2f5;
-  --text-secondary: #a0a5b8;
-  --text-tertiary: #5f6580;
-  --text-on-accent: #ffffff;
-
-  /* Accent — bright & vivid */
-  --accent-primary: #5b6ef5;
-  --accent-primary-hover: #7080ff;
-  
-  /* Border Tokens */
-  --border-subtle: rgba(255, 255, 255, 0.06);
-  --border-default: rgba(255, 255, 255, 0.1);
-
-  /* Shadows - Dark mode needs deeper shadows */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.5);
-  --shadow-friendly: 0 8px 30px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.2);
-
-  /* Surface Aliases */
-  --surface-1: var(--bg-secondary);
-  --surface-2: var(--bg-tertiary);
-  --surface-3: var(--bg-elevated);
+/* Extra light-mode glass surface */
+[data-theme='light'] .glass-panel {
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
 }
 
-[data-theme='dark'] body::before {
-  background: radial-gradient(circle at center, rgba(91, 110, 245, 0.08) 0%, transparent 50%);
-}
-
-[data-theme='dark'] ::selection {
-  background: rgba(91, 110, 245, 0.3);
-}
-
-[data-theme='dark'] .glass-panel {
-  background: rgba(24, 27, 35, 0.7);
+[data-theme='light'] .shimmer {
+  background: linear-gradient(90deg,
+      var(--bg-tertiary) 0%,
+      #e4e6ef 45%,
+      var(--bg-tertiary) 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.6s ease-in-out infinite;
 }

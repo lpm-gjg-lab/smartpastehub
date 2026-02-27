@@ -1,76 +1,12 @@
+/* ============================================================
+   Page.module.css — Base page container
+   ============================================================ */
 .page {
   display: flex;
   flex-direction: column;
-  gap: var(--space-lg);
-}
-
-.pageHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-md);
-}
-
-.section {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-sm);
-}
-
-.card {
-  background: var(--bg-tertiary);
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius-md);
-  padding: var(--space-lg);
-  transition: border-color var(--transition-fast);
-}
-
-.card:hover {
-  border-color: var(--glass-border-hover);
-}
-
-.cardList {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-md);
-}
-
-.cardItem {
-  background: var(--bg-tertiary);
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius-md);
-  padding: var(--space-md);
-  transition: border-color var(--transition-fast);
-}
-
-.cardItem:hover {
-  border-color: var(--glass-border-hover);
-}
-
-.row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-sm);
-}
-
-.actions {
-  display: flex;
-  gap: var(--space-sm);
-  margin-top: var(--space-sm);
-}
-
-.search {
-  padding: var(--space-sm) var(--space-md);
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--glass-border);
-  background: var(--bg-tertiary);
-  color: var(--text-primary);
-  font-size: 0.8125rem;
-  transition: border-color var(--transition-fast);
-}
-
-.search:focus {
-  outline: none;
-  border-color: var(--accent-primary);
+  height: 100%;
+  padding: var(--space-xl);
+  overflow-y: auto;
+  overflow-x: hidden;
+  animation: fadeIn var(--transition-base) ease-out;
 }

@@ -1,31 +1,33 @@
-import React from 'react';
-import { Template } from '../../hooks/template/useTemplates';
+import React from "react";
+import { Template } from "../../hooks/template/useTemplates";
+import styles from "../../styles/components/TemplateForm.module.css";
 
 interface Props {
   templates: Template[];
-  selectedId: string;
-  onSelect: (id: string) => void;
+  selectedId: number | null;
+  onSelect: (id: number | null) => void;
   newName: string;
   setNewName: (name: string) => void;
 }
 
-export function TemplateSelector({ templates, selectedId, onSelect, newName, setNewName }: Props) {
+export function TemplateSelector({
+  templates,
+  selectedId,
+  onSelect,
+  newName,
+  setNewName,
+}: Props) {
   return (
     <>
-      <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+      <div className={styles.row}>
         <select
-          value={selectedId}
-          onChange={(e) => onSelect(e.target.value)}
-          style={{
-            flex: 1,
-            background: 'rgba(255,255,255,0.06)',
-            color: '#fff',
-            border: '1px solid rgba(255,255,255,0.1)',
-            borderRadius: 6,
-            padding: '6px 10px',
-            fontSize: 12,
-            outline: 'none',
-          }}
+          value={selectedId === null ? "" : String(selectedId)}
+          onChange={(e) =>
+            onSelect(
+              e.target.value ? Number.parseInt(e.target.value, 10) : null,
+            )
+          }
+          className={styles.control}
         >
           <option value="">-- Custom Template --</option>
           {templates.map((t) => (
@@ -36,18 +38,10 @@ export function TemplateSelector({ templates, selectedId, onSelect, newName, set
         </select>
         <button
           onClick={() => {
-            onSelect('');
-            setNewName('');
+            onSelect(null);
+            setNewName("");
           }}
-          style={{
-            background: 'rgba(255,255,255,0.1)',
-            border: 'none',
-            color: '#fff',
-            borderRadius: 6,
-            padding: '6px 10px',
-            cursor: 'pointer',
-            fontSize: 11,
-          }}
+          className={styles.chipBtn}
         >
           New
         </button>
@@ -57,15 +51,7 @@ export function TemplateSelector({ templates, selectedId, onSelect, newName, set
         placeholder="Template Name (to save)"
         value={newName}
         onChange={(e) => setNewName(e.target.value)}
-        style={{
-          background: 'rgba(0,0,0,0.2)',
-          border: '1px solid rgba(255,255,255,0.1)',
-          color: '#fff',
-          padding: '6px 10px',
-          borderRadius: 6,
-          fontSize: 12,
-          outline: 'none',
-        }}
+        className={styles.input}
       />
     </>
   );

@@ -1,14 +1,19 @@
-import { PluginAPI, SmartPastePlugin } from './plugin-api';
-import { logger } from '../shared/logger';
+import { PluginAPI, SmartPastePlugin } from "./plugin-api";
+import { logger } from "../shared/logger";
 
 const plugins: SmartPastePlugin[] = [];
 
-export function registerPlugin(plugin: SmartPastePlugin, api: PluginAPI): void {
+export function registerPlugin(
+  plugin: SmartPastePlugin,
+  api: PluginAPI,
+): boolean {
   try {
     plugin.onActivate(api);
     plugins.push(plugin);
+    return true;
   } catch (error) {
-    logger.error('Plugin activation failed', { plugin: plugin.name, error });
+    logger.error("Plugin activation failed", { plugin: plugin.name, error });
+    return false;
   }
 }
 
