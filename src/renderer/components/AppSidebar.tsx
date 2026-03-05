@@ -1,9 +1,13 @@
+import { MoonIcon, SunIcon } from "@radix-ui/react-icons";
+
 import React, { useEffect, useRef, useState } from "react";
 import styles from "../styles/components/AppSidebar.module.css";
 import type { AppTab } from "../types";
 import appLogo from "../assets/app-logo.png";
 import { hasSmartPasteBridge, invokeIPC } from "../lib/ipc";
+import { applyThemeToRoot, emitThemeChanged } from "../lib/theme-sync";
 import { useToastStore } from "../stores/useToastStore";
+import { useTranslation } from "react-i18next";
 
 interface AppSidebarProps {
   activeTab: AppTab;
@@ -12,14 +16,16 @@ interface AppSidebarProps {
 
 const TABS: Array<{
   id: AppTab;
-  label: string;
+  labelKey: string;
   icon: React.ReactNode;
 }> = [
   {
     id: "dashboard",
-    label: "Dashboard",
+    labelKey: "sidebar.dashboard",
     icon: (
       <svg
+        aria-hidden="true"
+        focusable="false"
         width="18"
         height="18"
         viewBox="0 0 24 24"
@@ -38,9 +44,11 @@ const TABS: Array<{
   },
   {
     id: "paste",
-    label: "Smart Paste",
+    labelKey: "sidebar.smart_paste",
     icon: (
       <svg
+        aria-hidden="true"
+        focusable="false"
         width="18"
         height="18"
         viewBox="0 0 24 24"
@@ -58,9 +66,11 @@ const TABS: Array<{
   },
   {
     id: "history",
-    label: "History",
+    labelKey: "sidebar.history",
     icon: (
       <svg
+        aria-hidden="true"
+        focusable="false"
         width="18"
         height="18"
         viewBox="0 0 24 24"
@@ -77,9 +87,11 @@ const TABS: Array<{
   },
   {
     id: "snippets",
-    label: "Snippets",
+    labelKey: "sidebar.snippets",
     icon: (
       <svg
+        aria-hidden="true"
+        focusable="false"
         width="18"
         height="18"
         viewBox="0 0 24 24"
@@ -99,9 +111,11 @@ const TABS: Array<{
   },
   {
     id: "templates",
-    label: "Templates",
+    labelKey: "sidebar.templates",
     icon: (
       <svg
+        aria-hidden="true"
+        focusable="false"
         width="18"
         height="18"
         viewBox="0 0 24 24"
@@ -119,9 +133,11 @@ const TABS: Array<{
   },
   {
     id: "settings",
-    label: "Settings",
+    labelKey: "sidebar.settings",
     icon: (
       <svg
+        aria-hidden="true"
+        focusable="false"
         width="18"
         height="18"
         viewBox="0 0 24 24"
@@ -142,6 +158,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
   activeTab,
   onTabChange,
 }) => {
+  const { t } = useTranslation();
   const menuRef = useRef<HTMLDivElement>(null);
   const { addToast } = useToastStore();
 
@@ -170,12 +187,11 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
     if (!hasSmartPasteBridge()) {
       return;
     }
-
     invokeIPC<{ general?: { theme?: string } }>("settings:get")
       .then((s) => {
         const ipcTheme = (s?.general?.theme as "dark" | "light") ?? null;
-        if (ipcTheme && ipcTheme !== theme) {
-          setTheme(ipcTheme);
+        if (ipcTheme) {
+          setTheme((prev) => (prev === ipcTheme ? prev : ipcTheme));
         }
       })
       .catch((err) => {
@@ -185,30 +201,27 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
           type: "error",
         });
       });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [addToast]);
 
-  // On change: apply DOM, persist, sync to IPC
+  // On change: persist locally, emit event for global receiver in App.tsx, sync to IPC
   useEffect(() => {
-    if (theme === "light") {
-      document.documentElement.setAttribute("data-theme", "light");
-    } else {
-      document.documentElement.removeAttribute("data-theme");
-    }
-    localStorage.setItem("theme", theme);
+    const appliedTheme = applyThemeToRoot(theme);
+    emitThemeChanged(appliedTheme);
+
     if (!hasSmartPasteBridge()) {
       return;
     }
 
-    invokeIPC("settings:update", { general: { theme } }).catch((err) => {
-      addToast({
-        title: "Theme Save Failed",
-        message: err instanceof Error ? err.message : String(err),
-        type: "error",
-      });
-    });
+    invokeIPC("settings:update", { general: { theme: appliedTheme } }).catch(
+      (err) => {
+        addToast({
+          title: "Theme Save Failed",
+          message: err instanceof Error ? err.message : String(err),
+          type: "error",
+        });
+      },
+    );
   }, [addToast, theme]);
-
   useEffect(() => {
     let multiFailures = 0;
     let warned = false;
@@ -296,7 +309,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
   };
 
   return (
-    <div className={styles.sidebar}>
+    <aside className={styles.sidebar}>
       {/* Logo */}
       <div className={styles.logo}>
         <div className={styles.logoIcon}>
@@ -309,46 +322,53 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
       </div>
 
       {showStatusStrip && (
-        <div className={styles.statusStrip}>
+        <div
+          className={styles.statusStrip}
+          aria-live="polite"
+          aria-atomic="true"
+        >
           {activeSignals.multiCollecting && (
             <span className={styles.statusChip}>
-              ● Multi-Copy ({activeSignals.multiItems})
+              ●{" "}
+              {t("sidebar.status_multi_copy", {
+                count: activeSignals.multiItems,
+              })}
             </span>
           )}
           {activeSignals.macroRecording && (
-            <span className={styles.statusChip}>● Macro Recording</span>
+            <span className={styles.statusChip}>
+              ● {t("sidebar.status_macro_recording")}
+            </span>
           )}
           {activeSignals.telemetryDegraded && (
-            <span className={styles.statusChipWarn}>● Status Delayed</span>
+            <span className={styles.statusChipWarn}>
+              ● {t("sidebar.status_delayed")}
+            </span>
           )}
         </div>
       )}
 
       {/* Navigation */}
-      <nav
-        className={styles.nav}
-        ref={menuRef}
-        role="menu"
-        aria-label="Main navigation"
-      >
+      <nav className={styles.nav} ref={menuRef} aria-label="Main navigation">
         {TABS.map((tab, index) => {
           const isActive = activeTab === tab.id;
+          const label = t(tab.labelKey);
           return (
             <button
+              type="button"
               key={tab.id}
-              role="menuitem"
               className={`${styles.navItem} ${isActive ? styles.active : ""}`}
               onClick={() => onTabChange(tab.id)}
               onKeyDown={(e) => handleKeyDown(e, index)}
-              aria-label={tab.label}
+              aria-label={label}
               aria-current={isActive ? "page" : undefined}
-              title={tab.label}
+              title={label}
             >
               {isActive && <div className={styles.activePill} />}
               <span className={styles.icon}>{tab.icon}</span>
-              <span className={styles.label}>{tab.label}</span>
+              <span className={styles.label}>{label}</span>
               {tab.id === "paste" && hasActiveModes && (
-                <span className={styles.badge}>Active</span>
+                <span className={styles.badge}>{t("sidebar.active")}</span>
               )}
             </button>
           );
@@ -357,9 +377,19 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
 
       {/* Footer */}
       <div className={styles.footer}>
-        <button className={styles.helpBtn} aria-label="Help" title="Help">
+        <button
+          type="button"
+          className={styles.helpBtn}
+          onClick={() =>
+            window.dispatchEvent(new CustomEvent("app:open-onboarding"))
+          }
+          aria-label={t("sidebar.help")}
+          title={t("sidebar.help")}
+        >
           <span className={styles.icon}>
             <svg
+              aria-hidden="true"
+              focusable="false"
               width="16"
               height="16"
               viewBox="0 0 24 24"
@@ -374,33 +404,37 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
               <line x1="12" y1="17" x2="12.01" y2="17" />
             </svg>
           </span>
-          <span className={styles.helpLabel}>Help</span>
+          <span className={styles.helpLabel}>{t("sidebar.help")}</span>
         </button>
 
         {/* Inline theme toggle */}
         <div className={styles.themeRow}>
-          <span className={styles.themeLabel}>Theme</span>
+          <span className={styles.themeLabel}>{t("sidebar.theme")}</span>
           <div className={styles.themeToggle}>
             <button
+              type="button"
               className={`${styles.themeBtn} ${theme === "dark" ? styles.themeBtnActive : ""}`}
               onClick={() => setTheme("dark")}
-              aria-label="Dark mode"
-              title="Dark mode"
+              aria-label={t("sidebar.theme_dark")}
+              aria-pressed={theme === "dark"}
+              title={t("sidebar.theme_dark")}
             >
-              🌙
+              <MoonIcon />
             </button>
             <button
+              type="button"
               className={`${styles.themeBtn} ${theme === "light" ? styles.themeBtnActive : ""}`}
               onClick={() => setTheme("light")}
-              aria-label="Light mode"
-              title="Light mode"
+              aria-label={t("sidebar.theme_light")}
+              aria-pressed={theme === "light"}
+              title={t("sidebar.theme_light")}
             >
-              ☀️
+              <SunIcon />
             </button>
           </div>
         </div>
         {appVersion && <div className={styles.versionLabel}>v{appVersion}</div>}
       </div>
-    </div>
+    </aside>
   );
 };

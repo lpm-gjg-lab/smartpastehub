@@ -31,7 +31,11 @@
   letter-spacing: -0.03em;
   color: var(--text-primary);
   line-height: 1.2;
-  background: linear-gradient(135deg, var(--text-primary) 0%, var(--accent-primary-hover) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--text-primary) 0%,
+    var(--accent-primary-hover) 100%
+  );
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -87,7 +91,7 @@
 }
 
 .statCard::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
@@ -100,7 +104,9 @@
 
 .statCard:hover {
   border-color: var(--border-accent);
-  box-shadow: 0 0 0 1px var(--border-accent), var(--shadow-sm);
+  box-shadow:
+    0 0 0 1px var(--border-accent),
+    var(--shadow-sm);
   transform: translateY(-1px);
 }
 
@@ -133,9 +139,19 @@
 }
 
 .statIcon {
-  font-size: 1.25rem;
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   color: var(--accent-primary);
   line-height: 1;
+}
+
+.statIcon svg {
+  width: 100%;
+  height: 100%;
+  stroke: currentColor;
 }
 
 .statValue {
@@ -399,7 +415,6 @@
 }
 
 @keyframes pulse {
-
   0%,
   100% {
     opacity: 1;
@@ -442,7 +457,12 @@
 .skeletonStatCard {
   height: 96px;
   border-radius: var(--radius-lg);
-  background: linear-gradient(90deg, var(--bg-secondary) 25%, var(--bg-elevated) 50%, var(--bg-secondary) 75%);
+  background: linear-gradient(
+    90deg,
+    var(--bg-secondary) 25%,
+    var(--bg-elevated) 50%,
+    var(--bg-secondary) 75%
+  );
   background-size: 400px 100%;
   animation: shimmer 1.4s ease infinite;
 }
@@ -457,7 +477,12 @@
 
 .skeletonPanel {
   border-radius: var(--radius-lg);
-  background: linear-gradient(90deg, var(--bg-secondary) 25%, var(--bg-elevated) 50%, var(--bg-secondary) 75%);
+  background: linear-gradient(
+    90deg,
+    var(--bg-secondary) 25%,
+    var(--bg-elevated) 50%,
+    var(--bg-secondary) 75%
+  );
   background-size: 400px 100%;
   animation: shimmer 1.4s ease infinite;
   min-height: 200px;
@@ -525,8 +550,18 @@
 }
 
 .toolBtnIcon {
-  font-size: 1.5rem;
-  line-height: 1;
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent-primary);
+}
+
+.toolBtnIcon svg {
+  width: 100%;
+  height: 100%;
+  stroke: currentColor;
 }
 
 .toolBtnLabel {

@@ -11,8 +11,11 @@ export class PipelineRunner {
       if (!middleware.supports(ctx)) {
         continue;
       }
-      current = await middleware.run(current, ctx);
-      appliedTransforms.push(middleware.id);
+      const next = await middleware.run(current, ctx);
+      if (next !== current) {
+        current = next;
+        appliedTransforms.push(middleware.id);
+      }
     }
 
     return {

@@ -40,11 +40,13 @@ export interface IPCEvents {
     options?: {
       mode: "fix_grammar" | "rephrase" | "summarize" | "formalize";
       language?: "id" | "en";
-      provider?: "local" | "openai" | "gemini";
+      provider?: "local" | "openai" | "gemini" | "anthropic" | "deepseek" | "xai" | "custom";
       apiKey?: string;
+      baseUrl?: string;
+      model?: string;
     };
   };
-  "ai:result": { original: string; rewritten: string };
+  "ai:test-connection": void;
 
   "sync:status": {
     connected: boolean;
@@ -122,6 +124,29 @@ export interface IPCEvents {
   "clipboard:redact": { text: string };
   "snippet:expand": { trigger: string };
   "settings:get-app-profiles": void;
+  "settings:context-rules:list": void;
+  "settings:context-rules:create": {
+    name: string;
+    sourceApp?: string | null;
+    targetApp?: string | null;
+    contentType?: string | null;
+    preset: string;
+    transforms?: string[];
+    priority?: number;
+    enabled?: boolean;
+  };
+  "settings:context-rules:update": {
+    id: number;
+    name: string;
+    sourceApp?: string | null;
+    targetApp?: string | null;
+    contentType?: string | null;
+    preset: string;
+    transforms?: string[];
+    priority?: number;
+    enabled?: boolean;
+  };
+  "settings:context-rules:delete": { id: number };
   "settings:set-app-profile": {
     appName: string;
     cleanMode: "plain" | "code" | "email" | "doc" | "default";
@@ -142,12 +167,11 @@ export interface IPCEvents {
   "diagnostics:observability": { limit?: number };
   "timeline:clusters": void;
   "diagnostics:fallback-methods": void;
-  "automation:confirm-preview": void;
-  "automation:cancel-preview": void;
   "automation:set-active-preset": { presetId: string; appName?: string };
   "automation:paste-feedback": {
     appName: string;
     contentType: ContentType;
+    fieldIntent?: string;
     expectedIntent: "plain_text" | "rich_text";
     weight?: number;
   };

@@ -1,9 +1,12 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useId } from "react";
 import { invokeIPC } from "../lib/ipc";
+import { Cross2Icon } from "@radix-ui/react-icons";
 
 type ErrorCorrection = "L" | "M" | "Q" | "H";
 
 export default function QRBridge() {
+  const inputId = useId();
+  const sizeId = useId();
   const [inputText, setInputText] = useState("");
   const [dataUrls, setDataUrls] = useState<string[]>([]);
   const [currentChunk, setCurrentChunk] = useState(0);
@@ -80,10 +83,11 @@ export default function QRBridge() {
   const ecLevels: ErrorCorrection[] = ["L", "M", "Q", "H"];
 
   return (
-    <div
+    <main
+      aria-label="QR Code Bridge"
       style={{
-        width: 360,
-        height: 460,
+        width: "100%",
+        height: "100%",
         display: "flex",
         flexDirection: "column",
         background: "var(--bg-tertiary)",
@@ -97,16 +101,39 @@ export default function QRBridge() {
       }}
     >
       {/* Header */}
-      <div
+      <h1
+        className="window-drag-region"
         style={{
           padding: "10px 14px",
           borderBottom: "1px solid var(--border-subtle)",
           fontWeight: 600,
           fontSize: 13,
+          margin: 0,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
         }}
       >
-        📱 QR Code Bridge
-      </div>
+        <span>QR Code Bridge</span>
+        <button
+          type="button"
+          className="window-no-drag"
+          aria-label="Close window"
+          onClick={() => window.close()}
+          style={{
+            border: "none",
+            background: "transparent",
+            color: "var(--text-secondary)",
+            cursor: "pointer",
+            fontSize: 16,
+            lineHeight: 1,
+            borderRadius: 6,
+            padding: "2px 6px",
+          }}
+        >
+          <Cross2Icon />
+        </button>
+      </h1>
 
       {/* Content */}
       <div
@@ -121,12 +148,16 @@ export default function QRBridge() {
       >
         {/* Text input */}
         <div>
-          <label style={{ fontSize: 11, opacity: 0.6 }}>Text to encode</label>
+          <label htmlFor={inputId} style={{ fontSize: 11, opacity: 0.6 }}>
+            Text to encode
+          </label>
           <textarea
+            id={inputId}
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
             placeholder="Paste text here or it loads from clipboard automatically"
             rows={3}
+            aria-label="Text to encode"
             style={{
               display: "block",
               width: "100%",
@@ -146,14 +177,15 @@ export default function QRBridge() {
         {/* Controls */}
         <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
           <div>
-            <label style={{ fontSize: 11, opacity: 0.6 }}>
-              Error correction
-            </label>
+            <span style={{ fontSize: 11, opacity: 0.6 }}>Error correction</span>
             <div style={{ display: "flex", gap: 4, marginTop: 4 }}>
               {ecLevels.map((lvl) => (
                 <button
+                  type="button"
                   key={lvl}
                   onClick={() => setErrorCorrection(lvl)}
+                  aria-pressed={errorCorrection === lvl}
+                  aria-label={`Set error correction ${lvl}`}
                   style={{
                     padding: "3px 8px",
                     borderRadius: 4,
@@ -164,7 +196,8 @@ export default function QRBridge() {
                       errorCorrection === lvl
                         ? "var(--accent-primary)"
                         : "var(--glass-bg-hover)",
-                    color: "#fff",
+                    color:
+                      errorCorrection === lvl ? "#fff" : "var(--text-primary)",
                   }}
                 >
                   {lvl}
@@ -174,14 +207,18 @@ export default function QRBridge() {
           </div>
 
           <div style={{ flex: 1 }}>
-            <label style={{ fontSize: 11, opacity: 0.6 }}>Size: {size}px</label>
+            <label htmlFor={sizeId} style={{ fontSize: 11, opacity: 0.6 }}>
+              Size: {size}px
+            </label>
             <input
+              id={sizeId}
               type="range"
               min={128}
               max={512}
               step={32}
               value={size}
               onChange={(e) => setSize(Number(e.target.value))}
+              aria-label="QR size"
               style={{ display: "block", width: "100%", marginTop: 6 }}
             />
           </div>
@@ -200,10 +237,15 @@ export default function QRBridge() {
           }}
         >
           {loading && (
-            <div style={{ opacity: 0.5, fontSize: 12 }}>Generating…</div>
+            <output style={{ opacity: 0.5, fontSize: 12 }}>Generating…</output>
           )}
           {error && (
-            <div style={{ color: "var(--accent-danger)", fontSize: 12 }}>{error}</div>
+            <div
+              role="alert"
+              style={{ color: "var(--accent-danger)", fontSize: 12 }}
+            >
+              {error}
+            </div>
           )}
           {!loading && !error && dataUrls.length > 0 && (
             <img
@@ -228,15 +270,17 @@ export default function QRBridge() {
             }}
           >
             <button
+              type="button"
               onClick={() => setCurrentChunk((c) => Math.max(0, c - 1))}
               disabled={currentChunk === 0}
+              aria-label="Previous QR"
               style={{
                 padding: "4px 10px",
                 borderRadius: 5,
                 border: "none",
                 cursor: currentChunk === 0 ? "not-allowed" : "pointer",
                 background: "var(--glass-bg-hover)",
-                color: "#fff",
+                color: "var(--text-primary)",
                 fontSize: 12,
               }}
             >
@@ -246,10 +290,12 @@ export default function QRBridge() {
               {currentChunk + 1} / {dataUrls.length}
             </span>
             <button
+              type="button"
               onClick={() =>
                 setCurrentChunk((c) => Math.min(dataUrls.length - 1, c + 1))
               }
               disabled={currentChunk === dataUrls.length - 1}
+              aria-label="Next QR"
               style={{
                 padding: "4px 10px",
                 borderRadius: 5,
@@ -259,7 +305,7 @@ export default function QRBridge() {
                     ? "not-allowed"
                     : "pointer",
                 background: "var(--glass-bg-hover)",
-                color: "#fff",
+                color: "var(--text-primary)",
                 fontSize: 12,
               }}
             >
@@ -279,8 +325,10 @@ export default function QRBridge() {
         }}
       >
         <button
+          type="button"
           onClick={() => void handleCopyImage()}
           disabled={dataUrls.length === 0}
+          aria-label="Copy QR image"
           style={{
             flex: 2,
             padding: "7px 0",
@@ -295,11 +343,13 @@ export default function QRBridge() {
             color: "#fff",
           }}
         >
-          {copied ? "✓ Copied!" : "Copy QR Image"}
+          {copied ? "Copied" : "Copy QR Image"}
         </button>
         <button
+          type="button"
           onClick={() => void handleSave()}
           disabled={dataUrls.length === 0}
+          aria-label="Save QR image"
           style={{
             flex: 1,
             padding: "7px 0",
@@ -308,12 +358,12 @@ export default function QRBridge() {
             cursor: dataUrls.length > 0 ? "pointer" : "not-allowed",
             fontSize: 12,
             background: "var(--glass-bg-hover)",
-            color: "#fff",
+            color: "var(--text-primary)",
           }}
         >
           Save QR
         </button>
       </div>
-    </div>
+    </main>
   );
 }

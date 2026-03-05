@@ -25,22 +25,23 @@ test.describe("Smart Paste Assistant", () => {
   });
 
   test("tab navigation via clicks", async ({ page }) => {
+    const nav = page.getByRole("navigation", { name: "Main navigation" });
+
     // Click Dashboard tab
-    await page.getByRole("menuitem", { name: /Dashboard/i }).click();
+    await nav.getByRole("button", { name: "Dashboard", exact: true }).click();
     await expect(
       page.getByRole("heading", { name: "Recent Clips" }),
     ).toBeVisible();
 
     // Click History tab
-    await page.getByRole("menuitem", { name: /History/i }).click();
+    await nav.getByRole("button", { name: "History", exact: true }).click();
     await expect(page.getByRole("heading", { name: "History" })).toBeVisible();
 
     // Click Settings tab
-    await page.getByRole("menuitem", { name: /Settings/i }).click();
+    await nav.getByRole("button", { name: "Settings", exact: true }).click();
     await expect(
       page.getByText("Settings are available in Electron desktop app only."),
     ).toBeVisible();
-
   });
 
   test("tab navigation via keyboard", async ({ page }) => {
@@ -71,7 +72,8 @@ test.describe("Smart Paste Assistant", () => {
   test("history filters and bulk action controls are available", async ({
     page,
   }) => {
-    await page.getByRole("menuitem", { name: /History/i }).click();
+    const nav = page.getByRole("navigation", { name: "Main navigation" });
+    await nav.getByRole("button", { name: "History", exact: true }).click();
     await expect(page.getByLabel("Type filter")).toBeVisible();
     await expect(page.getByLabel("Date range filter")).toBeVisible();
     await expect(

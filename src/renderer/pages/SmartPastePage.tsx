@@ -3,12 +3,20 @@ import styles from "../styles/pages/SmartPastePage.module.css";
 import { SmartPasteZone } from "../components/SmartPasteZone";
 import { ResultPanel } from "../components/ResultPanel";
 import { Button } from "../components/Button";
+import { AiRewritePanel } from "../components/smart-paste/AiRewritePanel";
+import { TransformLab } from "../components/smart-paste/TransformLab";
+import { RegexLab } from "../components/smart-paste/RegexLab";
+import { MultiCopyPanel } from "../components/smart-paste/MultiCopyPanel";
+import { MacroRecorder } from "../components/smart-paste/MacroRecorder";
+import { ClipboardRing } from "../components/smart-paste/ClipboardRing";
 import { useSmartPasteStore } from "../stores/useSmartPasteStore";
 import { useToastStore } from "../stores/useToastStore";
 import { invokeIPC, onIPC, hasSmartPasteBridge } from "../lib/ipc";
 import { getTransformLabels } from "../lib/transform-labels";
-import { getSmartActions, getAutoPreset } from "../lib/smart-actions";
+import { getAutoPreset } from "../lib/smart-actions";
 import type { AppSettings, ContentType } from "../../shared/types";
+import { DEFAULT_SETTINGS } from "../../shared/constants";
+import { useTranslation } from "react-i18next";
 
 type RewriteMode =
   | "summarize"
@@ -69,26 +77,36 @@ type CaseType =
   | "lowercase"
   | "UPPERCASE";
 const AI_ACTIONS: { mode: RewriteMode; label: string; icon: string }[] = [
-  { mode: "fix_grammar", label: "Fix Grammar", icon: "✅" },
-  { mode: "rephrase", label: "Rephrase", icon: "🔄" },
-  { mode: "formalize", label: "Formalize", icon: "👔" },
-  { mode: "summarize", label: "Summarize", icon: "📝" },
-];
-
-const HOTKEYS = [
-  { keys: "Ctrl+Alt+H", desc: "History" },
-  { keys: "Ctrl+Alt+S", desc: "OCR Screenshot" },
-  { keys: "Shift+PrintScreen", desc: "OCR Screenshot" },
-  { keys: "Ctrl+Alt+Shift+S", desc: "Screenshot Only" },
-  { keys: "PrintScreen", desc: "Screenshot Only" },
-  { keys: "Ctrl+Alt+C", desc: "Multi-Copy" },
-  { keys: "Ctrl+Alt+G", desc: "Ghost Write" },
-  { keys: "Ctrl+Alt+T", desc: "Translate" },
+  { mode: "fix_grammar", label: "Fix Grammar", icon: "" },
+  { mode: "rephrase", label: "Rephrase Text", icon: "" },
+  { mode: "formalize", label: "Formalize Text", icon: "" },
+  { mode: "summarize", label: "Summarize Text", icon: "" },
 ];
 
 export const SmartPastePage: React.FC = () => {
+  const { t } = useTranslation();
   const [isAiRewriting, setIsAiRewriting] = React.useState(false);
-  const [pasteHotkey, setPasteHotkey] = React.useState("Alt+Shift+V");
+  const [pasteHotkey, setPasteHotkey] = React.useState<string>(
+    DEFAULT_SETTINGS.hotkeys.pasteClean,
+  );
+  const [historyHotkey, setHistoryHotkey] = React.useState<string>(
+    DEFAULT_SETTINGS.hotkeys.historyOpen,
+  );
+  const [ocrHotkey, setOcrHotkey] = React.useState<string>(
+    DEFAULT_SETTINGS.hotkeys.ocrCapture,
+  );
+  const [screenshotHotkey, setScreenshotHotkey] = React.useState<string>(
+    DEFAULT_SETTINGS.hotkeys.screenshotCapture,
+  );
+  const [multiCopyHotkey, setMultiCopyHotkey] = React.useState<string>(
+    DEFAULT_SETTINGS.hotkeys.multiCopy,
+  );
+  const [ghostWriteHotkey, setGhostWriteHotkey] = React.useState<string>(
+    DEFAULT_SETTINGS.hotkeys.ghostWrite,
+  );
+  const [translateHotkey, setTranslateHotkey] = React.useState<string>(
+    DEFAULT_SETTINGS.hotkeys.translateClipboard,
+  );
   const [autoCleanEnabled, setAutoCleanEnabled] = React.useState(false);
   const [moreAiOpen, setMoreAiOpen] = React.useState(false);
 
@@ -113,9 +131,9 @@ export const SmartPastePage: React.FC = () => {
   const [securityMatches, setSecurityMatches] = React.useState<
     SensitiveMatch[]
   >([]);
-  const [maskMode, setMaskMode] = React.useState<"full" | "partial" | "skip">(
-    "partial",
-  );
+  const [maskMode, setMaskMode] = React.useState<
+    "full" | "partial" | "smart" | "skip"
+  >("smart");
   const [showSecurity, setShowSecurity] = React.useState(false);
   const [multiAddText, setMultiAddText] = React.useState("");
   // Paste Queue
@@ -161,6 +179,8 @@ export const SmartPastePage: React.FC = () => {
   const [diffBefore, setDiffBefore] = React.useState("");
   const [diffAfter, setDiffAfter] = React.useState("");
   const store = useSmartPasteStore();
+  const { inputText, outputText, appliedTransforms, setInput, setResult } =
+    store;
   const { addToast } = useToastStore();
   const pollFailuresRef = React.useRef({ multi: 0, queue: 0, ring: 0 });
   const pollWarnedRef = React.useRef({
@@ -227,9 +247,30 @@ export const SmartPastePage: React.FC = () => {
     const loadHotkey = async () => {
       try {
         const settings = await invokeIPC<AppSettings>("settings:get");
-        if (settings?.hotkeys?.pasteClean) {
-          setPasteHotkey(settings.hotkeys.pasteClean);
-        }
+        setPasteHotkey(
+          settings?.hotkeys?.pasteClean || DEFAULT_SETTINGS.hotkeys.pasteClean,
+        );
+        setHistoryHotkey(
+          settings?.hotkeys?.historyOpen ||
+            DEFAULT_SETTINGS.hotkeys.historyOpen,
+        );
+        setOcrHotkey(
+          settings?.hotkeys?.ocrCapture || DEFAULT_SETTINGS.hotkeys.ocrCapture,
+        );
+        setScreenshotHotkey(
+          settings?.hotkeys?.screenshotCapture ||
+            DEFAULT_SETTINGS.hotkeys.screenshotCapture,
+        );
+        setMultiCopyHotkey(
+          settings?.hotkeys?.multiCopy || DEFAULT_SETTINGS.hotkeys.multiCopy,
+        );
+        setGhostWriteHotkey(
+          settings?.hotkeys?.ghostWrite || DEFAULT_SETTINGS.hotkeys.ghostWrite,
+        );
+        setTranslateHotkey(
+          settings?.hotkeys?.translateClipboard ||
+            DEFAULT_SETTINGS.hotkeys.translateClipboard,
+        );
         setAutoCleanEnabled(Boolean(settings?.general?.autoCleanOnCopy));
       } catch {
         // Keep default hint
@@ -237,26 +278,19 @@ export const SmartPastePage: React.FC = () => {
     };
     void loadHotkey();
 
-    // Listen for OCR results from main process (triggered by Ctrl+Shift+V with image in clipboard)
-    const removeOcrListener = onIPC(
-      "ocr:result",
-      (payload: unknown) => {
-        const data = payload as { text?: string; confidence?: number };
-        if (data?.text) {
-          store.setInput(data.text);
-          addToast({
-            title: `🧾 OCR selesai (${Math.round((data.confidence ?? 0) * 100)}% akurasi)`,
-            message: "Teks dari gambar dimuat ke panel input",
-            type: "success",
-            duration: 3000,
-          });
-        }
-      },
-    );
-
-    return () => {
-      if (typeof removeOcrListener === "function") removeOcrListener();
-    };
+    // Listen for OCR results from main process (triggered by Smart Paste hotkey on image clipboard)
+    const removeOcrListener = onIPC("ocr:result", (payload: unknown) => {
+      const data = payload as { text?: string; confidence?: number };
+      if (data?.text) {
+        setInput(data.text);
+        addToast({
+          title: `OCR selesai (${Math.round((data.confidence ?? 0) * 100)}% akurasi)`,
+          message: "Teks dari gambar dimuat ke panel input",
+          type: "success",
+          duration: 3000,
+        });
+      }
+    });
 
     // Poll multi-clipboard + queue state every 2s
     const multiInterval = window.setInterval(async () => {
@@ -284,16 +318,19 @@ export const SmartPastePage: React.FC = () => {
         markPollFailure("ring");
       }
     }, 2000);
-    return () => window.clearInterval(multiInterval);
-  }, [markPollFailure, markPollSuccess]);
+    return () => {
+      if (typeof removeOcrListener === "function") removeOcrListener();
+      window.clearInterval(multiInterval);
+    };
+  }, [addToast, markPollFailure, markPollSuccess, setInput]);
 
   // Auto-detect type when input changes
   useEffect(() => {
-    if (!store.inputText.trim()) {
-      store.setResult({
-        outputText: store.outputText,
+    if (!inputText.trim()) {
+      setResult({
+        outputText,
         detectedType: "unknown",
-        appliedTransforms: store.appliedTransforms,
+        appliedTransforms,
       });
       return;
     }
@@ -303,13 +340,13 @@ export const SmartPastePage: React.FC = () => {
         const detection = await invokeIPC<{ type: ContentType }>(
           "clipboard:detect",
           {
-            text: store.inputText,
+            text: inputText,
           },
         );
-        store.setResult({
-          outputText: store.outputText,
+        setResult({
+          outputText,
           detectedType: detection.type,
-          appliedTransforms: store.appliedTransforms,
+          appliedTransforms,
         });
       } catch (err) {
         console.error("Detection failed", err);
@@ -317,7 +354,7 @@ export const SmartPastePage: React.FC = () => {
     }, 400);
 
     return () => clearTimeout(timer);
-  }, [store.inputText]);
+  }, [appliedTransforms, inputText, outputText, setResult]);
 
   // Snippet trigger — watch for ;; prefix in any focused input/textarea
   useEffect(() => {
@@ -502,6 +539,23 @@ export const SmartPastePage: React.FC = () => {
       return;
     }
 
+    // Guard: check AI configuration before calling IPC
+    try {
+      const currentSettings = await invokeIPC<AppSettings>("settings:get");
+      const aiProvider = currentSettings?.ai?.provider ?? "local";
+      const aiKey = currentSettings?.ai?.apiKey ?? "";
+      if (aiProvider === "local" || !aiKey.trim()) {
+        addToast({
+          title: "AI Not Configured",
+          message: "Set up an AI provider and API key in Settings → AI",
+          type: "warning",
+        });
+        return;
+      }
+    } catch {
+      // If we can't fetch settings, let the call proceed and surface any real error
+    }
+
     setIsAiRewriting(true);
     try {
       const rewritten = await invokeIPC<RewriteResult>("ai:rewrite", {
@@ -660,8 +714,8 @@ export const SmartPastePage: React.FC = () => {
       addToast({
         title:
           matches.length > 0
-            ? `⚠️ ${matches.length} sensitive item(s) found`
-            : "✅ No sensitive data found",
+            ? `${matches.length} sensitive item(s) found`
+            : "No sensitive data found",
         type: matches.length > 0 ? "warning" : "success",
       });
     } catch (err) {
@@ -905,22 +959,27 @@ export const SmartPastePage: React.FC = () => {
         else dp[i]![j] = Math.max(dp[i + 1]?.[j] ?? 0, dp[i]?.[j + 1] ?? 0);
       }
     }
-    const result: { text: string; kind: "same" | "add" | "remove" }[] = [];
+    const result: {
+      id: number;
+      text: string;
+      kind: "same" | "add" | "remove";
+    }[] = [];
+    let tokenId = 0;
     let i = 0,
       j = 0;
     while (i < wordsA.length || j < wordsB.length) {
       if (i < wordsA.length && j < wordsB.length && wordsA[i] === wordsB[j]) {
-        result.push({ text: wordsA[i] ?? "", kind: "same" });
+        result.push({ id: tokenId++, text: wordsA[i] ?? "", kind: "same" });
         i++;
         j++;
       } else if (
         j < wordsB.length &&
         (i >= wordsA.length || (dp[i]?.[j + 1] ?? 0) >= (dp[i + 1]?.[j] ?? 0))
       ) {
-        result.push({ text: wordsB[j] ?? "", kind: "add" });
+        result.push({ id: tokenId++, text: wordsB[j] ?? "", kind: "add" });
         j++;
       } else {
-        result.push({ text: wordsA[i] ?? "", kind: "remove" });
+        result.push({ id: tokenId++, text: wordsA[i] ?? "", kind: "remove" });
         i++;
       }
     }
@@ -1107,11 +1166,15 @@ export const SmartPastePage: React.FC = () => {
               Instant benefit is currently off. Enable Auto-clean on copy to
               feel the app immediately when testing.
             </div>
-            <button className={styles.demoChip} onClick={runDemoCleanup}>
-              ⚡ Try demo
+            <button
+              type="button"
+              className={styles.demoChip}
+              onClick={runDemoCleanup}
+            >
+              {t("smart_paste.try_demo")}
             </button>
             <Button size="sm" variant="primary" onClick={enableInstantMode}>
-              Enable Instant Mode
+              {t("smart_paste.enable_instant_mode")}
             </Button>
           </div>
         )}
@@ -1128,189 +1191,28 @@ export const SmartPastePage: React.FC = () => {
 
       {store.hasResult && (
         <div className={styles.resultContainer}>
-          {/* ── Smart AI Action Bar ─────────────────────────────────────────── */}
-          {(() => {
-            const smartActions = getSmartActions(
-              store.detectedType ?? "plain_text",
-              (store.outputText || store.inputText).length,
-            );
-            const primaryActions = smartActions.filter((a) => a.isPrimary);
-            const secondaryActions = smartActions.filter((a) => !a.isPrimary);
-            const hasAnyActions =
-              smartActions.length > 0 || secondaryActions.length > 0;
-
-            return (
-              <div className={styles.aiActions}>
-                <span className={styles.aiActionLabel}>AI</span>
-
-                {/* Primary smart suggestions — shown immediately */}
-                {primaryActions.length > 0 ? (
-                  primaryActions.map(({ action, label, icon }) => (
-                    <button
-                      key={action}
-                      className={`${styles.aiChip} ${styles.aiChipPrimary}`}
-                      disabled={
-                        isAiRewriting || isTranslating || isSummarizingUrl
-                      }
-                      onClick={() => void handleSmartAction(action)}
-                    >
-                      {icon}{" "}
-                      {isAiRewriting || isTranslating || isSummarizingUrl
-                        ? "Thinking…"
-                        : label}
-                    </button>
-                  ))
-                ) : (
-                  <span className={styles.aiActionHint}>
-                    {store.detectedType === "source_code" ||
-                      store.detectedType === "json_data"
-                      ? "Use Transform Lab ↓ for data operations"
-                      : "Paste text to get AI suggestions"}
-                  </span>
-                )}
-
-                {/* "More AI" expandable — secondary suggestions + all utility actions */}
-                <button
-                  className={styles.moreAiToggle}
-                  onClick={() => setMoreAiOpen((v) => !v)}
-                  aria-expanded={moreAiOpen}
-                >
-                  {moreAiOpen ? "▲ Less" : "▾ More AI"}
-                </button>
-
-                {moreAiOpen && (
-                  <>
-                    {/* Secondary context suggestions */}
-                    {secondaryActions.map(({ action, label, icon }) => (
-                      <button
-                        key={action}
-                        className={styles.aiChip}
-                        disabled={
-                          isAiRewriting || isTranslating || isSummarizingUrl
-                        }
-                        onClick={() => void handleSmartAction(action)}
-                      >
-                        {icon} {label}
-                      </button>
-                    ))}
-
-                    {/* AI text transforms */}
-                    <button
-                      className={styles.aiChip}
-                      disabled={isAiRewriting}
-                      onClick={() => void handleAiRewrite("fix_grammar")}
-                    >
-                      ✅ Fix Grammar
-                    </button>
-                    <button
-                      className={styles.aiChip}
-                      disabled={isAiRewriting}
-                      onClick={() => void handleAiRewrite("rephrase")}
-                    >
-                      🔄 Rephrase
-                    </button>
-                    <button
-                      className={styles.aiChip}
-                      disabled={isAiRewriting}
-                      onClick={() => void handleAiRewrite("formalize")}
-                    >
-                      👔 Formalize
-                    </button>
-                    <button
-                      className={styles.aiChip}
-                      disabled={isAiRewriting}
-                      onClick={() => void handleAiRewrite("summarize")}
-                    >
-                      📝 Summarize
-                    </button>
-                    <button
-                      className={styles.aiChip}
-                      disabled={isAiRewriting}
-                      onClick={() => void handleAiRewrite("bullet_list")}
-                    >
-                      • Bullets
-                    </button>
-                    <button
-                      className={styles.aiChip}
-                      disabled={isAiRewriting}
-                      onClick={() => void handleAiRewrite("numbered_list")}
-                    >
-                      1. Numbered
-                    </button>
-                    <button
-                      className={styles.aiChip}
-                      disabled={isAiRewriting}
-                      onClick={() => void handleAiRewrite("to_table")}
-                    >
-                      ⊞ Table
-                    </button>
-                    <button
-                      className={styles.aiChip}
-                      disabled={isAiRewriting}
-                      onClick={() => void handleAiRewrite("join_lines")}
-                    >
-                      ⊞ Join Lines
-                    </button>
-
-                    {/* Utility actions */}
-                    <button
-                      className={styles.aiChip}
-                      disabled={isTranslating}
-                      onClick={() => {
-                        setTranslateLang((l) => (l === "en" ? "id" : "en"));
-                        void handleTranslate();
-                      }}
-                    >
-                      🌐{" "}
-                      {isTranslating
-                        ? "Translating…"
-                        : `Translate → ${translateLang === "en" ? "ID" : "EN"}`}
-                    </button>
-                    <button
-                      className={styles.aiChip}
-                      disabled={isDetectingTone}
-                      onClick={() => void handleDetectTone()}
-                    >
-                      🎭 {isDetectingTone ? "Analyzing…" : "Detect Tone"}
-                    </button>
-                    <button
-                      className={styles.aiChip}
-                      disabled={isRedacting}
-                      onClick={() => void handleRedactPII()}
-                    >
-                      🔴 {isRedacting ? "Redacting…" : "Redact PII"}
-                    </button>
-                    <button
-                      className={styles.aiChip}
-                      onClick={() => void handleGhostWrite()}
-                      disabled={!store.hasResult && !store.inputText.trim()}
-                    >
-                      ⌨️ Ghost Write
-                    </button>
-
-                    {/* Detected tone badge */}
-                    {detectedTone && (
-                      <span className={styles.toneBadge}>
-                        {detectedTone}
-                        <button
-                          style={{
-                            marginLeft: 6,
-                            background: "none",
-                            border: "none",
-                            cursor: "pointer",
-                            fontSize: "0.65rem",
-                          }}
-                          onClick={() => setDetectedTone(null)}
-                        >
-                          ✕
-                        </button>
-                      </span>
-                    )}
-                  </>
-                )}
-              </div>
-            );
-          })()}
+          <AiRewritePanel
+            detectedType={store.detectedType}
+            textLength={(store.outputText || store.inputText).length}
+            isAiRewriting={isAiRewriting}
+            isTranslating={isTranslating}
+            isSummarizingUrl={isSummarizingUrl}
+            isDetectingTone={isDetectingTone}
+            isRedacting={isRedacting}
+            moreAiOpen={moreAiOpen}
+            setMoreAiOpen={setMoreAiOpen}
+            onSmartAction={handleSmartAction}
+            onAiRewrite={handleAiRewrite}
+            translateLang={translateLang}
+            setTranslateLang={setTranslateLang}
+            onTranslate={handleTranslate}
+            onDetectTone={handleDetectTone}
+            onRedactPII={handleRedactPII}
+            onGhostWrite={handleGhostWrite}
+            ghostWriteDisabled={!store.hasResult && !store.inputText.trim()}
+            detectedTone={detectedTone}
+            clearDetectedTone={() => setDetectedTone(null)}
+          />
           <ResultPanel
             result={{
               input: store.inputText,
@@ -1323,227 +1225,42 @@ export const SmartPastePage: React.FC = () => {
             onClear={store.reset}
           />
 
-          {/* Phase 5 — Transform Lab */}
-          <div className={styles.transformPanel}>
-            <button
-              className={styles.transformToggle}
-              onClick={() => setShowTransform((v) => !v)}
-            >
-              {showTransform ? "▼" : "▶"} Transform Lab
-            </button>
-            {showTransform && (
-              <>
-                <div className={styles.transformGrid}>
-                  <button
-                    className={styles.transformBtn}
-                    onClick={() =>
-                      handleTransform(
-                        "transform:math",
-                        "Math",
-                        store.outputText,
-                      )
-                    }
-                  >
-                    🔢 Math
-                  </button>
-                  <button
-                    className={styles.transformBtn}
-                    onClick={() =>
-                      handleTransform(
-                        "transform:color",
-                        "Color",
-                        store.outputText,
-                      )
-                    }
-                  >
-                    🎨 Color
-                  </button>
-                  <button
-                    className={styles.transformBtn}
-                    onClick={() =>
-                      handleTransform(
-                        "transform:open-links",
-                        "Open Links",
-                        store.outputText,
-                      )
-                    }
-                  >
-                    🔗 Open Links
-                  </button>
-                  <button
-                    className={styles.transformBtn}
-                    onClick={() =>
-                      handleTransform(
-                        "transform:scrape-url",
-                        "Scrape URL",
-                        store.outputText,
-                      )
-                    }
-                  >
-                    🌐 Scrape URL
-                  </button>
-                  <button
-                    className={styles.transformBtn}
-                    onClick={() =>
-                      handleTransform(
-                        "transform:extract-file",
-                        "Extract File",
-                        store.outputText,
-                      )
-                    }
-                  >
-                    📁 Extract File
-                  </button>
-                  <button
-                    className={styles.transformBtn}
-                    onClick={() =>
-                      handleTransform(
-                        "transform:make-secret",
-                        "Make Secret",
-                        store.outputText,
-                      )
-                    }
-                  >
-                    🔐 Make Secret
-                  </button>
-                </div>
-                <button
-                  className={styles.transformBtn}
-                  onClick={() =>
-                    handleTransform(
-                      "transform:md-to-rtf",
-                      "MD→Text",
-                      store.outputText,
-                    )
-                  }
-                >
-                  📄 MD→Text
-                </button>
-                <div className={styles.transformFormatRow}>
-                  <span className={styles.aiActionLabel}>Convert to</span>
-                  <select
-                    className={styles.transformSelect}
-                    value={targetFormat}
-                    onChange={(e) =>
-                      setTargetFormat(e.target.value as TargetFormat)
-                    }
-                  >
-                    <option value="json">JSON</option>
-                    <option value="yaml">YAML</option>
-                    <option value="toml">TOML</option>
-                  </select>
-                  <button
-                    className={styles.transformBtn}
-                    onClick={() =>
-                      handleTransform(
-                        "transform:convert-format",
-                        `Convert→${targetFormat}`,
-                        { text: store.outputText, targetFormat },
-                      )
-                    }
-                  >
-                    ⚡ Convert
-                  </button>
-                </div>
-                {/* Case Converter */}
-                <div className={styles.transformFormatRow}>
-                  <span className={styles.aiActionLabel}>Case</span>
-                  <select
-                    className={styles.transformSelect}
-                    value={selectedCase}
-                    onChange={(e) =>
-                      setSelectedCase(e.target.value as CaseType)
-                    }
-                  >
-                    <option value="camelCase">camelCase</option>
-                    <option value="PascalCase">PascalCase</option>
-                    <option value="snake_case">snake_case</option>
-                    <option value="kebab-case">kebab-case</option>
-                    <option value="SCREAMING_SNAKE">SCREAMING_SNAKE</option>
-                    <option value="Title Case">Title Case</option>
-                    <option value="lowercase">lowercase</option>
-                    <option value="UPPERCASE">UPPERCASE</option>
-                  </select>
-                  <button
-                    className={styles.transformBtn}
-                    onClick={() => void handleCaseConvert()}
-                  >
-                    Aa Convert
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-          {/* Regex Lab */}
-          <button
-            type="button"
-            className={styles.transformToggle}
-            onClick={() => setShowRegexLab((v) => !v)}
-          >
-            {showRegexLab ? "▲" : "▼"} Regex Lab
-          </button>
-          {showRegexLab && (
-            <div className={styles.regexLab}>
-              <div className={styles.regexLabRow}>
-                <label>Pattern</label>
-                <input
-                  className={styles.regexInput}
-                  value={regexPattern}
-                  onChange={(e) => setRegexPattern(e.target.value)}
-                  placeholder="e.g. \s+"
-                  spellCheck={false}
-                />
-                <label>Flags</label>
-                <input
-                  className={styles.regexFlagsInput}
-                  value={regexFlags}
-                  onChange={(e) => setRegexFlags(e.target.value)}
-                  placeholder="g"
-                />
-              </div>
-              <div className={styles.regexLabRow}>
-                <label>Replace</label>
-                <input
-                  className={styles.regexInput}
-                  value={regexReplacement}
-                  onChange={(e) => setRegexReplacement(e.target.value)}
-                  placeholder="replacement (use $1, $2 for groups)"
-                  spellCheck={false}
-                />
-                <button
-                  type="button"
-                  onClick={handleRegexTest}
-                  className={styles.aiBtn}
-                >
-                  Test
-                </button>
-                <button
-                  type="button"
-                  onClick={handleRegexApply}
-                  className={styles.aiBtn}
-                  disabled={!regexPreview}
-                >
-                  Apply
-                </button>
-              </div>
-              {regexError && (
-                <div className={styles.regexError}>{regexError}</div>
-              )}
-              {regexPreview && (
-                <div className={styles.regexPreview}>
-                  <span>Preview:</span> {regexPreview}
-                </div>
-              )}
-            </div>
-          )}
+          <TransformLab
+            showTransform={showTransform}
+            setShowTransform={setShowTransform}
+            outputText={store.outputText}
+            targetFormat={targetFormat}
+            setTargetFormat={setTargetFormat}
+            selectedCase={selectedCase}
+            setSelectedCase={setSelectedCase}
+            handleTransform={handleTransform}
+            handleCaseConvert={handleCaseConvert}
+          />
+          <RegexLab
+            showRegexLab={showRegexLab}
+            setShowRegexLab={setShowRegexLab}
+            regexPattern={regexPattern}
+            setRegexPattern={setRegexPattern}
+            regexReplacement={regexReplacement}
+            setRegexReplacement={setRegexReplacement}
+            regexFlags={regexFlags}
+            setRegexFlags={setRegexFlags}
+            regexError={regexError}
+            regexPreview={regexPreview}
+            handleRegexTest={handleRegexTest}
+            handleRegexApply={handleRegexApply}
+          />
         </div>
       )}
 
       {/* ── Advanced Tools (collapsed by default) ────────────────────────── */}
       <div className={styles.criticalStrip}>
-        <div className={styles.criticalLabel}>Quick Controls</div>
+        <div className={styles.criticalLabel}>
+          {t("smart_paste.quick_controls")}
+        </div>
         <div className={styles.criticalActions}>
           <button
+            type="button"
             className={`${styles.multiBtn} ${multiState.isCollecting ? styles.criticalActiveBtn : ""}`}
             onClick={
               multiState.isCollecting ? handleMultiClear : handleMultiStart
@@ -1554,6 +1271,7 @@ export const SmartPastePage: React.FC = () => {
               : "▶ Start Collect"}
           </button>
           <button
+            type="button"
             className={styles.multiBtn}
             onClick={handleMultiMerge}
             disabled={multiState.items.length === 0}
@@ -1561,6 +1279,7 @@ export const SmartPastePage: React.FC = () => {
             ⊕ Merge Multi
           </button>
           <button
+            type="button"
             className={styles.multiBtn}
             onClick={handleQueuePasteNext}
             disabled={queueSize === 0}
@@ -1568,21 +1287,28 @@ export const SmartPastePage: React.FC = () => {
             ▶ Paste Next ({queueSize})
           </button>
           <button
+            type="button"
             className={`${styles.multiBtn} ${isRecording ? styles.criticalActiveBtn : ""}`}
             onClick={isRecording ? stopAndSaveMacro : startRecording}
           >
-            {isRecording ? "⏹ Save Macro" : "⏺ Record Macro"}
+            {isRecording
+              ? `⏹ ${t("smart_paste.save_macro")}`
+              : `⏺ ${t("smart_paste.record_macro")}`}
           </button>
         </div>
       </div>
 
       <div className={styles.advancedSection}>
         <button
+          type="button"
           className={styles.advancedToggle}
           onClick={() => setShowAdvancedTools((v) => !v)}
           aria-expanded={showAdvancedTools}
+          aria-controls="advanced-tools-panel"
         >
-          <span>{showAdvancedTools ? "▼" : "▶"} Advanced Tools</span>
+          <span>
+            {showAdvancedTools ? "▼" : "▶"} {t("smart_paste.advanced_tools")}
+          </span>
           <span className={styles.advancedHint}>
             Multi-Copy · Security · Paste Queue · Clipboard Stack · Macros ·
             Diff
@@ -1590,84 +1316,39 @@ export const SmartPastePage: React.FC = () => {
         </button>
 
         {showAdvancedTools && (
-          <div className={styles.advancedBody}>
-            {/* Phase 3 — Multi-Clipboard Panel */}
-            <div className={styles.multiPanel}>
-              <div className={styles.multiHeader}>
-                <span className={styles.multiLabel}>Multi-Copy</span>
-                <span
-                  className={`${styles.multiStatus} ${multiState.isCollecting ? styles.multiCollecting : ""}`}
-                >
-                  {multiState.isCollecting
-                    ? `● Collecting (${multiState.items.length})`
-                    : `${multiState.items.length} items`}
-                </span>
-              </div>
-              <div className={styles.multiActions}>
-                <button
-                  className={styles.multiBtn}
-                  onClick={handleMultiStart}
-                  disabled={multiState.isCollecting}
-                >
-                  {multiState.isCollecting ? "Collecting…" : "▶ Start"}
-                </button>
-                <button
-                  className={styles.multiBtn}
-                  onClick={handleMultiMerge}
-                  disabled={multiState.items.length === 0}
-                >
-                  ⊕ Merge into Input
-                </button>
-                <button
-                  className={styles.multiBtn}
-                  onClick={handleMultiClear}
-                  disabled={
-                    multiState.items.length === 0 && !multiState.isCollecting
-                  }
-                >
-                  ✕ Clear
-                </button>
-                {multiState.isCollecting && (
-                  <div className={styles.multiAddRow}>
-                    <input
-                      className={styles.multiAddInput}
-                      value={multiAddText}
-                      onChange={(e) => setMultiAddText(e.target.value)}
-                      placeholder="Type to add manually…"
-                      onKeyDown={(e) =>
-                        e.key === "Enter" && void handleMultiAdd()
-                      }
-                    />
-                    <button
-                      className={styles.multiBtn}
-                      onClick={handleMultiAdd}
-                      disabled={!multiAddText.trim()}
-                    >
-                      + Add
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
+          <div id="advanced-tools-panel" className={styles.advancedBody}>
+            <MultiCopyPanel
+              multiState={multiState}
+              multiAddText={multiAddText}
+              setMultiAddText={setMultiAddText}
+              handleMultiStart={handleMultiStart}
+              handleMultiMerge={handleMultiMerge}
+              handleMultiClear={handleMultiClear}
+              handleMultiAdd={handleMultiAdd}
+            />
 
             {/* Phase 7 — Security Inspector */}
             <div className={styles.securityPanel}>
               <div className={styles.securityHeader}>
                 <span className={styles.securityLabel}>
-                  🔒 Security Inspector
+                  {t("smart_paste.security_inspector")}
                 </span>
                 <div className={styles.securityBody}>
                   <button
+                    type="button"
                     className={styles.securityBtn}
                     onClick={handleSecurityScan}
                   >
-                    Scan
+                    {t("smart_paste.scan")}
                   </button>
                   {securityMatches.length > 0 && (
                     <>
                       <div className={styles.securityMatches}>
-                        {securityMatches.map((m, i) => (
-                          <span key={i} className={styles.securityBadge}>
+                        {securityMatches.map((m) => (
+                          <span
+                            key={`${m.type}-${m.start}-${m.end}`}
+                            className={styles.securityBadge}
+                          >
                             {m.type}
                           </span>
                         ))}
@@ -1676,21 +1357,32 @@ export const SmartPastePage: React.FC = () => {
                         <select
                           className={styles.securitySelect}
                           value={maskMode}
+                          aria-label="Mask mode"
                           onChange={(e) =>
                             setMaskMode(
-                              e.target.value as "full" | "partial" | "skip",
+                              e.target.value as
+                                | "full"
+                                | "partial"
+                                | "smart"
+                                | "skip",
                             )
                           }
                         >
-                          <option value="full">Full mask</option>
-                          <option value="partial">Partial mask</option>
-                          <option value="skip">Skip</option>
+                          <option value="smart">Smart (by type)</option>
+                          <option value="full">
+                            {t("smart_paste.full_mask")}
+                          </option>
+                          <option value="partial">
+                            {t("smart_paste.partial_mask")}
+                          </option>
+                          <option value="skip">{t("smart_paste.skip")}</option>
                         </select>
                         <button
+                          type="button"
                           className={styles.securityBtn}
                           onClick={handleApplyMask}
                         >
-                          Apply Mask
+                          {t("smart_paste.apply_mask")}
                         </button>
                       </div>
                     </>
@@ -1702,7 +1394,7 @@ export const SmartPastePage: React.FC = () => {
                         color: "var(--accent-success)",
                       }}
                     >
-                      ✅ Clean
+                      {t("smart_paste.clean")}
                     </span>
                   )}
                 </div>
@@ -1712,7 +1404,9 @@ export const SmartPastePage: React.FC = () => {
             {/* Paste Queue Panel */}
             <div className={styles.multiPanel}>
               <div className={styles.multiHeader}>
-                <span className={styles.multiLabel}>📎 Paste Queue</span>
+                <span className={styles.multiLabel}>
+                  {t("smart_paste.paste_queue")}
+                </span>
                 <span className={styles.multiStatus}>
                   {queueSize} item{queueSize !== 1 ? "s" : ""}
                   {queuePeek && (
@@ -1727,23 +1421,26 @@ export const SmartPastePage: React.FC = () => {
               </div>
               <div className={styles.multiActions}>
                 <button
+                  type="button"
                   className={styles.multiBtn}
                   onClick={handleQueuePasteNext}
                   disabled={queueSize === 0}
                 >
-                  ▶ Paste Next
+                  Paste Next
                 </button>
                 <button
+                  type="button"
                   className={styles.multiBtn}
                   onClick={handleQueueClear}
                   disabled={queueSize === 0}
                 >
-                  ✕ Clear Queue
+                  Clear Queue
                 </button>
                 <div className={styles.multiAddRow}>
                   <input
                     className={styles.multiAddInput}
                     value={queueEnqueueText}
+                    aria-label="Queue input"
                     onChange={(e) => setQueueEnqueueText(e.target.value)}
                     placeholder={
                       store.outputText.trim()
@@ -1755,6 +1452,7 @@ export const SmartPastePage: React.FC = () => {
                     }
                   />
                   <button
+                    type="button"
                     className={styles.multiBtn}
                     onClick={handleQueueEnqueue}
                   >
@@ -1764,140 +1462,55 @@ export const SmartPastePage: React.FC = () => {
               </div>
             </div>
 
-            {/* Clipboard Stack (Ring Buffer) */}
-            <div className={styles.ringPanel}>
-              <div className={styles.multiHeader}>
-                <span className={styles.multiLabel}>📋 Clipboard Stack</span>
-                <span className={styles.multiStatus}>
-                  {ringItems.length} recent
-                </span>
-              </div>
-              {ringItems.length > 0 && (
-                <div className={styles.ringChips}>
-                  {ringItems.slice(0, 5).map((item) => (
-                    <button
-                      key={item.id}
-                      className={styles.ringChip}
-                      onClick={async () => {
-                        await invokeIPC("ring:select", { id: item.id });
-                        store.setInput(item.content);
-                        addToast({
-                          title: "Loaded from stack",
-                          type: "success",
-                          duration: 1500,
-                        });
-                      }}
-                      title={item.content}
-                    >
-                      {item.content.slice(0, 32)}
-                      {item.content.length > 32 ? "…" : ""}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
+            <ClipboardRing
+              ringItems={ringItems}
+              onSelect={async (item) => {
+                await invokeIPC("ring:select", { id: item.id });
+                store.setInput(item.content);
+                addToast({
+                  title: "Loaded from stack",
+                  type: "success",
+                  duration: 1500,
+                });
+              }}
+            />
 
-            {/* ── Macro Recorder ── */}
-            <div className={styles.macroPanel}>
-              <div className={styles.multiHeader}>
-                <span className={styles.multiLabel}>🎬 Macro Recorder</span>
-                <button
-                  className={styles.multiBtn}
-                  onClick={() => setShowMacroPanel((v) => !v)}
-                >
-                  {showMacroPanel ? "Hide" : "Show"}
-                </button>
-              </div>
-              {showMacroPanel && (
-                <div className={styles.macroBody}>
-                  <div className={styles.macroRecordRow}>
-                    {isRecording ? (
-                      <>
-                        <span className={styles.macroRecordingBadge}>
-                          ● REC
-                        </span>
-                        <span className={styles.macroStepCount}>
-                          {recordedSteps.length} step(s)
-                        </span>
-                        <input
-                          className={styles.macroNameInput}
-                          placeholder="Macro name…"
-                          value={macroName}
-                          onChange={(e) => setMacroName(e.target.value)}
-                        />
-                        <button
-                          className={styles.multiBtn}
-                          onClick={stopAndSaveMacro}
-                        >
-                          ⏹ Save
-                        </button>
-                        <button
-                          className={styles.multiBtn}
-                          onClick={() => {
-                            setIsRecording(false);
-                            setRecordedSteps([]);
-                          }}
-                        >
-                          ✕ Cancel
-                        </button>
-                      </>
-                    ) : (
-                      <button
-                        className={styles.multiBtn}
-                        onClick={startRecording}
-                      >
-                        ⏺ Record New Macro
-                      </button>
-                    )}
-                  </div>
-                  {macros.length > 0 && (
-                    <div className={styles.macroList}>
-                      {macros.map((m, idx) => (
-                        <div key={idx} className={styles.macroItem}>
-                          <span className={styles.macroItemName}>{m.name}</span>
-                          <span className={styles.macroItemSteps}>
-                            {m.steps.length} steps: {m.steps.join(" → ")}
-                          </span>
-                          <div className={styles.macroItemActions}>
-                            <button
-                              className={styles.multiBtn}
-                              onClick={() => void runMacro(m)}
-                            >
-                              ▶ Run
-                            </button>
-                            <button
-                              className={styles.multiBtn}
-                              onClick={() => deleteMacro(idx)}
-                            >
-                              🗑
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  {macros.length === 0 && !isRecording && (
-                    <p className={styles.macroEmpty}>
-                      No macros yet. Hit ⏺ to record a sequence of transforms.
-                    </p>
-                  )}
-                </div>
-              )}
-            </div>
+            <MacroRecorder
+              showMacroPanel={showMacroPanel}
+              setShowMacroPanel={setShowMacroPanel}
+              isRecording={isRecording}
+              setIsRecording={setIsRecording}
+              recordedSteps={recordedSteps}
+              setRecordedSteps={setRecordedSteps}
+              macroName={macroName}
+              setMacroName={setMacroName}
+              macros={macros}
+              startRecording={startRecording}
+              stopAndSaveMacro={stopAndSaveMacro}
+              runMacro={runMacro}
+              deleteMacro={deleteMacro}
+            />
 
             {/* ── Diff Viewer ── */}
             <div className={styles.diffPanel}>
               <div className={styles.multiHeader}>
-                <span className={styles.multiLabel}>🔍 Diff Viewer</span>
-                <button className={styles.multiBtn} onClick={openDiff}>
-                  Open Diff
+                <span className={styles.multiLabel}>
+                  {t("smart_paste.diff_viewer")}
+                </span>
+                <button
+                  type="button"
+                  className={styles.multiBtn}
+                  onClick={openDiff}
+                >
+                  {t("smart_paste.open_diff")}
                 </button>
                 {showDiff && (
                   <button
+                    type="button"
                     className={styles.multiBtn}
                     onClick={() => setShowDiff(false)}
                   >
-                    ✕ Close
+                    Close
                   </button>
                 )}
               </div>
@@ -1909,9 +1522,9 @@ export const SmartPastePage: React.FC = () => {
                     <span className={styles.diffSame}>unchanged</span>
                   </div>
                   <div className={styles.diffContent}>
-                    {computeDiff(diffBefore, diffAfter).map((token, i) => (
+                    {computeDiff(diffBefore, diffAfter).map((token) => (
                       <span
-                        key={i}
+                        key={token.id}
                         className={
                           token.kind === "add"
                             ? styles.diffAdd
@@ -1933,41 +1546,48 @@ export const SmartPastePage: React.FC = () => {
 
       {/* Hotkey Guide — always visible at the bottom */}
       <div className={styles.hotkeyBar}>
-        {[{ keys: pasteHotkey, desc: "Smart Paste" }, ...HOTKEYS].map(
-          ({ keys, desc }) => (
-            <div key={keys} className={styles.hotkeyItem}>
-              <kbd className={styles.kbd}>{keys}</kbd>
-              <span className={styles.hotkeyDesc}>{desc}</span>
-            </div>
-          ),
-        )}
+        {[
+          { keys: pasteHotkey, desc: t("smart_paste.hotkey_smart_paste") },
+          { keys: historyHotkey, desc: t("smart_paste.hotkey_history") },
+          { keys: ocrHotkey, desc: t("smart_paste.hotkey_ocr") },
+          { keys: screenshotHotkey, desc: t("smart_paste.hotkey_screenshot") },
+          { keys: multiCopyHotkey, desc: t("smart_paste.hotkey_multi_copy") },
+          { keys: ghostWriteHotkey, desc: t("smart_paste.hotkey_ghost_write") },
+          { keys: translateHotkey, desc: t("smart_paste.hotkey_translate") },
+        ].map(({ keys, desc }) => (
+          <div key={`${desc}-${keys}`} className={styles.hotkeyItem}>
+            <kbd className={styles.kbd}>{keys}</kbd>
+            <span className={styles.hotkeyDesc}>{desc}</span>
+          </div>
+        ))}
       </div>
 
       {/* Snippet Trigger Popup — fixed floating */}
       {snippetPopup && (
         <div className={styles.snippetPopup}>
-          <span className={styles.snippetPopupName}>
-            📎 {snippetPopup.name}
-          </span>
+          <span className={styles.snippetPopupName}>{snippetPopup.name}</span>
           <span className={styles.snippetPopupPreview}>
             {snippetPopup.content.slice(0, 60)}
             {snippetPopup.content.length > 60 ? "…" : ""}
           </span>
           <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
             <button
+              type="button"
               className={styles.multiBtn}
               onClick={() => {
                 store.setInput(snippetPopup.content);
                 setSnippetPopup(null);
               }}
             >
-              ✓ Use
+              {t("smart_paste.use")}
             </button>
             <button
+              type="button"
               className={styles.multiBtn}
+              aria-label="Close snippet popup"
               onClick={() => setSnippetPopup(null)}
             >
-              ✕
+              Close
             </button>
           </div>
         </div>

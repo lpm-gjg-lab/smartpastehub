@@ -1,3 +1,13 @@
+import { 
+  ExclamationTriangleIcon, 
+  GearIcon,
+  MagicWandIcon,
+  ScissorsIcon,
+  EyeOpenIcon,
+  Component1Icon,
+  CheckCircledIcon
+} from "@radix-ui/react-icons";
+
 import React from "react";
 import styles from "../../styles/components/ToastWindow.module.css";
 import { ToastData } from "../../hooks/useToastData";
@@ -13,15 +23,15 @@ export function ToastHeader({ data }: Props) {
   const typeLabel = data.type.replace("_", " ").toUpperCase();
 
   const getIcon = () => {
-    if (data.type === "bypass_mode") return "🛑";
-    if (data.type === "sensitive_warning") return "⚠️";
-    if (data.type === "size_warning") return "⚠️";
-    if (data.type === "system") return "⚙️";
-    if (data.type === "auto_clean") return "🧹";
-    if (data.type === "paste_clean") return "✂️";
-    if (data.type === "paste_preview") return "🪄";
-    if (data.type === "command_palette") return "⌘";
-    return "✨";
+    if (data.type === "bypass_mode") return <span style={{ color: "var(--accent-warning)" }}><ExclamationTriangleIcon /></span>;
+    if (data.type === "sensitive_warning") return <span style={{ color: "var(--accent-danger)" }}><ExclamationTriangleIcon /></span>;
+    if (data.type === "size_warning") return <span style={{ color: "var(--accent-warning)" }}><ExclamationTriangleIcon /></span>;
+    if (data.type === "system") return <span style={{ color: "var(--text-secondary)" }}><GearIcon /></span>;
+    if (data.type === "auto_clean") return <span style={{ color: "var(--accent-primary)" }}><MagicWandIcon /></span>;
+    if (data.type === "paste_clean") return <span style={{ color: "var(--accent-primary)" }}><ScissorsIcon /></span>;
+    if (data.type === "paste_preview") return <span style={{ color: "var(--accent-primary)" }}><EyeOpenIcon /></span>;
+    if (data.type === "command_palette") return <span style={{ color: "var(--accent-primary)" }}><Component1Icon /></span>;
+    return <span style={{ color: "var(--accent-primary)" }}><CheckCircledIcon /></span>;
   };
 
   const getTitle = () => {
@@ -54,14 +64,33 @@ export function ToastHeader({ data }: Props) {
           </span>
         )}
       </div>
-      {data.type !== "bypass_mode" && data.type !== "system" && (
-        <div
-          className={styles.typeBadge}
-          aria-label={`Content type ${typeLabel.toLowerCase()}`}
+      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+        {data.type !== "bypass_mode" && data.type !== "system" && (
+          <div
+            className={styles.typeBadge}
+            aria-label={`Content type ${typeLabel.toLowerCase()}`}
+          >
+            {typeLabel}
+          </div>
+        )}
+        <button
+          type="button"
+          onClick={() => window.close()}
+          aria-label="Close notification"
+          style={{
+            background: "transparent",
+            border: "none",
+            color: "var(--text-secondary)",
+            cursor: "pointer",
+            fontSize: 16,
+            lineHeight: 1,
+            padding: "2px 6px",
+            borderRadius: "6px",
+          }}
         >
-          {typeLabel}
-        </div>
-      )}
+          ✕
+        </button>
+      </div>
     </div>
   );
 }

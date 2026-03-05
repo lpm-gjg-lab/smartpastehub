@@ -1,4 +1,6 @@
 import { recognize } from "tesseract.js";
+import fs from "fs";
+import path from "path";
 
 export interface OCROptions {
   languages: string[];
@@ -63,6 +65,36 @@ function tryDecodeDataUrl(input: string): Buffer | string {
   return Buffer.from(payload, "base64");
 }
 
+function resolveLocalLangPath(languages: string[]): string | undefined {
+  const normalized = Array.from(
+    new Set(
+      languages
+        .map((lang) => String(lang ?? "").trim())
+        .filter((lang) => lang.length > 0),
+    ),
+  );
+  if (normalized.length === 0) {
+    return undefined;
+  }
+
+  const candidates = [
+    path.join(process.resourcesPath ?? "", "tessdata"),
+    process.resourcesPath ?? "",
+    process.cwd(),
+  ].filter((candidate) => candidate.length > 0);
+
+  for (const candidate of candidates) {
+    const allAvailable = normalized.every((lang) =>
+      fs.existsSync(path.join(candidate, `${lang}.traineddata`)),
+    );
+    if (allAvailable) {
+      return candidate;
+    }
+  }
+
+  return undefined;
+}
+
 export async function recognizeText(
   image: Buffer | string,
   options?: Partial<OCROptions>,
@@ -77,25 +109,49 @@ export async function recognizeText(
       ? resolved.languages.join("+")
       : "eng";
   const threshold = normalizeThreshold(resolved.confidence_threshold);
+  const normalizedLanguages =
+    resolved.languages && resolved.languages.length > 0
+      ? resolved.languages
+      : DEFAULT_OPTIONS.languages;
   const rawImageInput = toImageInput(image);
   const imageInput =
     typeof rawImageInput === "string"
       ? tryDecodeDataUrl(rawImageInput)
       : rawImageInput;
 
+  const localLangPath = resolveLocalLangPath(normalizedLanguages);
+
+  const makeWorkerOptions = (): Parameters<typeof recognize>[2] => {
+    const workerOptions: NonNullable<Parameters<typeof recognize>[2]> = {
+      logger: (message) => {
+        console.log("[OCR]", message);
+      },
+      errorHandler: (error: unknown) => {
+        console.error("[OCR Error]", error);
+      },
+    };
+    if (localLangPath) {
+      workerOptions.langPath = localLangPath;
+    }
+    return workerOptions;
+  };
+
   let result: Awaited<ReturnType<typeof recognize>>;
   let warning: string | undefined;
+
   try {
-    result = await recognize(imageInput, languages);
+    result = await recognize(imageInput, languages, makeWorkerOptions());
   } catch (error) {
-    const requestedLanguages = resolved.languages ?? DEFAULT_OPTIONS.languages;
+    console.error("OCR primary attempt failed:", error);
+    const requestedLanguages = normalizedLanguages;
     const hasFallbackCandidate = requestedLanguages.some(
       (lang) => lang !== "eng",
     );
     if (!hasFallbackCandidate) {
       throw error;
     }
-    result = await recognize(imageInput, "eng");
+
+    result = await recognize(imageInput, "eng", makeWorkerOptions());
     warning = "OCR fallback used: English model only";
   }
 

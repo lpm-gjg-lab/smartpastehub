@@ -14,7 +14,7 @@ describe("ai rewriter", () => {
       provider: "local",
     });
 
-    expect(result).toBe(text);
+    expect(result.text).toBe(text);
   });
 
   it("uses OpenAI-compatible endpoint and returns rewritten content", async () => {
@@ -34,7 +34,7 @@ describe("ai rewriter", () => {
       model: "gpt-4o-mini",
     });
 
-    expect(result).toBe("Rewritten text");
+    expect(result.text).toBe("Rewritten text");
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
@@ -57,6 +57,31 @@ describe("ai rewriter", () => {
     ).rejects.toThrowError(/AI API error: 401 Unauthorized/);
   });
 
+  it("strips HTML tags from error body on 504", async () => {
+    const htmlBody =
+      "<!DOCTYPE html><html><head><title>504: Gateway time-out</title></head><body><h1>Gateway time-out</h1><div>Visit cloudflare.com</div></body></html>";
+    vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: false,
+      status: 504,
+      statusText: "Gateway Timeout",
+      text: async () => htmlBody,
+      headers: { get: () => "text/html" },
+    } as unknown as Response);
+
+    await expect(
+      rewriteText("hello", {
+        mode: "summarize",
+        language: "en",
+        provider: "openai",
+        apiKey: "k",
+      }),
+    ).rejects.toSatisfy((err: unknown) => {
+      const msg = err instanceof Error ? err.message : "";
+      // Must NOT contain raw HTML angle brackets
+      return !msg.includes("<") && msg.includes("504");
+    });
+  });
+
   it("uses Gemini endpoint and returns generated text", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue({
       ok: true,
@@ -74,6 +99,6 @@ describe("ai rewriter", () => {
       model: "gemini-2.5-flash",
     });
 
-    expect(result).toBe("Gemini output");
+    expect(result.text).toBe("Gemini output");
   });
 });

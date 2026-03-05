@@ -1,5 +1,7 @@
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect, useId } from "react";
+import { useTranslation } from "react-i18next";
 import { invokeIPC } from "../lib/ipc";
+import { Cross2Icon } from "@radix-ui/react-icons";
 
 type FormatMode = "markdown" | "plaintext" | "html";
 
@@ -14,6 +16,8 @@ interface ClipResult {
 }
 
 export default function WebClipper() {
+  const { t } = useTranslation();
+  const urlInputId = useId();
   const [url, setUrl] = useState("");
   const [clipResult, setClipResult] = useState<ClipResult | null>(null);
   const [format, setFormat] = useState<FormatMode>("markdown");
@@ -22,6 +26,13 @@ export default function WebClipper() {
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
   const [saved, setSaved] = useState(false);
+  const statusMessage = loading
+    ? t("window.clipper.loading")
+    : copied
+      ? t("window.clipper.copied")
+      : saved
+        ? t("window.clipper.saved")
+        : "";
 
   // ── #8 Auto-populate URL dari clipboard saat window dibuka (✔ auto)
   useEffect(() => {
@@ -35,6 +46,17 @@ export default function WebClipper() {
         // clipboard read permission denied — silently skip
       }
     })();
+  }, []);
+
+  const applyFormat = useCallback(async (html: string, fmt: FormatMode) => {
+    if (fmt === "html") {
+      setRenderedContent(html);
+      return;
+    }
+    const channel =
+      fmt === "markdown" ? "clipper:to-markdown" : "clipper:to-plaintext";
+    const converted = await invokeIPC<string>(channel, html);
+    setRenderedContent(converted ?? "");
   }, []);
 
   const clip = useCallback(async () => {
@@ -53,29 +75,18 @@ export default function WebClipper() {
         url,
       });
       setClipResult(result);
-      await _applyFormat(result.content, format);
+      await applyFormat(result.content, format);
     } catch (e) {
       setError(String(e));
     } finally {
       setLoading(false);
     }
-  }, [url, format]);
-
-  const _applyFormat = async (html: string, fmt: FormatMode) => {
-    if (fmt === "html") {
-      setRenderedContent(html);
-      return;
-    }
-    const channel =
-      fmt === "markdown" ? "clipper:to-markdown" : "clipper:to-plaintext";
-    const converted = await invokeIPC<string>(channel, html);
-    setRenderedContent(converted ?? "");
-  };
+  }, [url, format, applyFormat]);
 
   const handleFormatChange = async (fmt: FormatMode) => {
     setFormat(fmt);
     if (clipResult) {
-      await _applyFormat(clipResult.content, fmt);
+      await applyFormat(clipResult.content, fmt);
     }
   };
 
@@ -98,16 +109,17 @@ export default function WebClipper() {
   };
 
   const formats: { key: FormatMode; label: string }[] = [
-    { key: "markdown", label: "Markdown" },
-    { key: "plaintext", label: "Plain Text" },
+    { key: "markdown", label: t("window.clipper.format_markdown") },
+    { key: "plaintext", label: t("window.clipper.format_plaintext") },
     { key: "html", label: "HTML" },
   ];
 
   return (
-    <div
+    <main
+      aria-label={t("window.clipper.title")}
       style={{
-        width: 480,
-        height: 560,
+        width: "100%",
+        height: "100%",
         display: "flex",
         flexDirection: "column",
         background: "var(--bg-tertiary)",
@@ -121,16 +133,39 @@ export default function WebClipper() {
       }}
     >
       {/* Header */}
-      <div
+      <h1
+        className="window-drag-region"
         style={{
           padding: "10px 14px",
           borderBottom: "1px solid var(--border-subtle)",
           fontWeight: 600,
           fontSize: 13,
+          margin: 0,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
         }}
       >
-        🌐 Web Clipper
-      </div>
+        <span>{t("window.clipper.title")}</span>
+        <button
+          className="window-no-drag"
+          type="button"
+          aria-label="Close window"
+          onClick={() => window.close()}
+          style={{
+            border: "none",
+            background: "transparent",
+            color: "var(--text-secondary)",
+            cursor: "pointer",
+            fontSize: 16,
+            lineHeight: 1,
+            borderRadius: 6,
+            padding: "2px 6px",
+          }}
+        >
+          <Cross2Icon />
+        </button>
+      </h1>
 
       {/* URL input */}
       <div
@@ -142,11 +177,13 @@ export default function WebClipper() {
         }}
       >
         <input
+          id={urlInputId}
           type="url"
           value={url}
           onChange={(e) => setUrl(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && void clip()}
-          placeholder="https://example.com/article"
+          placeholder={t("window.clipper.url_placeholder")}
+          aria-label={t("window.clipper.url_placeholder")}
           style={{
             flex: 1,
             padding: "6px 10px",
@@ -158,8 +195,10 @@ export default function WebClipper() {
           }}
         />
         <button
+          type="button"
           onClick={() => void clip()}
           disabled={loading || !url.trim()}
+          aria-label={t("window.clipper.clip")}
           style={{
             padding: "6px 14px",
             borderRadius: 6,
@@ -171,7 +210,7 @@ export default function WebClipper() {
             color: "#fff",
           }}
         >
-          {loading ? "…" : "Clip"}
+          {loading ? t("window.clipper.loading") : t("window.clipper.clip")}
         </button>
       </div>
 
@@ -190,23 +229,31 @@ export default function WebClipper() {
           </strong>
           {clipResult.byline && ` · ${clipResult.byline}`}
           {clipResult.siteName && ` · ${clipResult.siteName}`}
-          {` · ${clipResult.length} chars`}
+          {` · ${t("window.clipper.chars", { count: clipResult.length })}`}
         </div>
       )}
 
       {/* Format toggle */}
-      <div
+      <fieldset
+        aria-label="Output format"
         style={{
           padding: "6px 14px",
           display: "flex",
           gap: 6,
           borderBottom: "1px solid var(--border-subtle)",
+          margin: 0,
+          borderLeft: "none",
+          borderRight: "none",
+          borderTop: "none",
         }}
       >
         {formats.map(({ key, label }) => (
           <button
+            type="button"
             key={key}
             onClick={() => void handleFormatChange(key)}
+            aria-pressed={format === key}
+            aria-label={label}
             style={{
               padding: "3px 10px",
               borderRadius: 4,
@@ -217,26 +264,35 @@ export default function WebClipper() {
                 format === key
                   ? "var(--accent-primary)"
                   : "var(--glass-bg-hover)",
-              color: "#fff",
+              color: format === key ? "#fff" : "var(--text-primary)",
             }}
           >
             {label}
           </button>
         ))}
-      </div>
+      </fieldset>
 
       {/* Preview */}
       <div
         style={{
           flex: 1,
+          minHeight: 0,
+          maxHeight: 280,
           overflowY: "auto",
           padding: "10px 14px",
         }}
       >
-        {error && <div style={{ color: "var(--accent-danger)", fontSize: 12 }}>{error}</div>}
+        {error && (
+          <div
+            role="alert"
+            style={{ color: "var(--accent-danger)", fontSize: 12 }}
+          >
+            {error}
+          </div>
+        )}
         {!error && !renderedContent && !loading && (
           <div style={{ opacity: 0.4, fontSize: 12 }}>
-            Enter a URL and click Clip to extract article content.
+            {t("window.clipper.empty_hint")}
           </div>
         )}
         {renderedContent && (
@@ -266,8 +322,10 @@ export default function WebClipper() {
         }}
       >
         <button
+          type="button"
           onClick={() => void handleCopy()}
           disabled={!renderedContent}
+          aria-label={t("window.clipper.copy")}
           style={{
             flex: 2,
             padding: "7px 0",
@@ -282,11 +340,13 @@ export default function WebClipper() {
             color: "#fff",
           }}
         >
-          {copied ? "✓ Copied!" : "Copy"}
+          {copied ? t("window.clipper.copied") : t("window.clipper.copy")}
         </button>
         <button
+          type="button"
           onClick={() => void handleSave()}
           disabled={!clipResult}
+          aria-label={t("window.clipper.save_snippet")}
           style={{
             flex: 1,
             padding: "7px 0",
@@ -294,15 +354,30 @@ export default function WebClipper() {
             border: "none",
             cursor: clipResult ? "pointer" : "not-allowed",
             fontSize: 12,
-            background: saved
-              ? "var(--success-glow)"
-              : "var(--glass-bg-hover)",
-            color: "#fff",
+            background: saved ? "var(--success-glow)" : "var(--glass-bg-hover)",
+            color: saved ? "#fff" : "var(--text-primary)",
           }}
         >
-          {saved ? "✓ Saved" : "Save to Snippets"}
+          {saved ? t("window.clipper.saved") : t("window.clipper.save_snippet")}
         </button>
       </div>
-    </div>
+      <div
+        aria-live="polite"
+        aria-atomic="true"
+        style={{
+          position: "absolute",
+          width: 1,
+          height: 1,
+          padding: 0,
+          margin: -1,
+          overflow: "hidden",
+          clip: "rect(0, 0, 0, 0)",
+          whiteSpace: "nowrap",
+          border: 0,
+        }}
+      >
+        {statusMessage}
+      </div>
+    </main>
   );
 }

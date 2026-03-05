@@ -94,6 +94,15 @@ function typeTextLinux(text: string): void {
   }
 }
 
+function sendWindowsSendKeys(keys: string): void {
+  const script = [
+    "Add-Type -AssemblyName System.Windows.Forms",
+    "Start-Sleep -Milliseconds 80",
+    `[System.Windows.Forms.SendKeys]::SendWait('${keys}')`,
+  ].join("; ");
+  runCommand("powershell", ["-NoProfile", "-Command", script], 3000);
+}
+
 /**
  * Simulate Ctrl+V (or Cmd+V on macOS) keystroke to paste clipboard contents
  * into the currently active application.
@@ -104,10 +113,7 @@ export function simulatePaste(): void {
   try {
     switch (process.platform) {
       case "win32":
-        execSync(
-          "powershell -Command \"Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.SendKeys]::SendWait('{ALTUP}{CTRLUP}'); [System.Windows.Forms.SendKeys]::SendWait('^v')\"",
-          { windowsHide: true, timeout: 3000 },
-        );
+        sendWindowsSendKeys("^v");
         break;
       case "darwin":
         execSync(
@@ -131,10 +137,7 @@ export function simulateShiftInsert(): void {
   try {
     switch (process.platform) {
       case "win32":
-        execSync(
-          "powershell -Command \"Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.SendKeys]::SendWait('{ALTUP}{CTRLUP}'); [System.Windows.Forms.SendKeys]::SendWait('+{INSERT}')\"",
-          { windowsHide: true, timeout: 3000 },
-        );
+        sendWindowsSendKeys("+{INSERT}");
         break;
       case "darwin":
         execSync(
@@ -158,16 +161,13 @@ export function simulateShiftInsert(): void {
 /**
  * Simulate pressing the Enter key in the currently active application.
  *
- * Used by "Clean & Send" mode (Ctrl+Alt+V) to auto-submit after paste.
+ * Used by clean-and-send flows to auto-submit after paste.
  */
 export function simulateEnter(): void {
   try {
     switch (process.platform) {
       case "win32":
-        execSync(
-          "powershell -Command \"Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.SendKeys]::SendWait('{ALTUP}{CTRLUP}'); [System.Windows.Forms.SendKeys]::SendWait('{ENTER}')\"",
-          { windowsHide: true, timeout: 3000 },
-        );
+        sendWindowsSendKeys("{ENTER}");
         break;
       case "darwin":
         execSync(

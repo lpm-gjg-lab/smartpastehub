@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useId, useState } from "react";
 import { invokeIPC } from "../lib/ipc";
 
 interface ChartResult {
@@ -9,6 +9,7 @@ interface ChartResult {
 }
 
 export default function AutoChart() {
+  const inputId = useId();
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<ChartResult | null>(null);
@@ -41,7 +42,8 @@ export default function AutoChart() {
   }
 
   return (
-    <div
+    <main
+      aria-label="Auto Chart"
       style={{
         display: "flex",
         flexDirection: "column",
@@ -54,6 +56,7 @@ export default function AutoChart() {
       }}
     >
       <div
+        className="window-drag-region"
         style={{
           display: "flex",
           justifyContent: "space-between",
@@ -61,10 +64,12 @@ export default function AutoChart() {
           marginBottom: "12px",
         }}
       >
-        <h2 style={{ margin: 0, fontSize: "16px", fontWeight: 600 }}>
+        <h1 style={{ margin: 0, fontSize: "16px", fontWeight: 600 }}>
           Auto Chart
-        </h2>
+        </h1>
         <button
+          type="button"
+          className="window-no-drag"
           onClick={close}
           style={{
             background: "none",
@@ -80,10 +85,18 @@ export default function AutoChart() {
         </button>
       </div>
 
+      <label
+        htmlFor={inputId}
+        style={{ fontSize: "12px", marginBottom: "6px" }}
+      >
+        Paste chart data
+      </label>
       <textarea
+        id={inputId}
         value={input}
         onChange={(e) => setInput(e.target.value)}
         placeholder="Paste tabular data or numbers to generate a chart…"
+        aria-label="Paste chart data"
         style={{
           flex: 1,
           resize: "none",
@@ -100,6 +113,7 @@ export default function AutoChart() {
 
       {error && (
         <div
+          role="alert"
           style={{
             color: "var(--accent-danger)",
             fontSize: "12px",
@@ -114,7 +128,8 @@ export default function AutoChart() {
       )}
 
       {result && (
-        <div
+        <section
+          aria-label="Generated chart summary"
           style={{
             marginBottom: "10px",
             padding: "10px",
@@ -129,7 +144,9 @@ export default function AutoChart() {
           <div style={{ color: "var(--text-secondary)", marginBottom: "4px" }}>
             Type: {result.chartType}
           </div>
-          <div style={{ color: "var(--text-secondary)" }}>{result.description}</div>
+          <div style={{ color: "var(--text-secondary)" }}>
+            {result.description}
+          </div>
           {result.dataUrl && (
             <img
               src={result.dataUrl}
@@ -141,12 +158,14 @@ export default function AutoChart() {
               }}
             />
           )}
-        </div>
+        </section>
       )}
 
       <button
+        type="button"
         onClick={() => void generate()}
         disabled={loading || !input.trim()}
+        aria-label={loading ? "Generating chart" : "Generate chart"}
         style={{
           padding: "10px",
           background: loading ? "var(--bg-elevated)" : "var(--accent-primary)",
@@ -160,6 +179,23 @@ export default function AutoChart() {
       >
         {loading ? "Generating…" : "Generate Chart"}
       </button>
-    </div>
+      <div
+        aria-live="polite"
+        aria-atomic="true"
+        style={{
+          position: "absolute",
+          width: 1,
+          height: 1,
+          padding: 0,
+          margin: -1,
+          overflow: "hidden",
+          clip: "rect(0, 0, 0, 0)",
+          whiteSpace: "nowrap",
+          border: 0,
+        }}
+      >
+        {loading ? "Generating chart" : result ? "Chart generated" : ""}
+      </div>
+    </main>
   );
 }

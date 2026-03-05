@@ -2,6 +2,7 @@ import { ContentType } from "../shared/types";
 
 export interface AutomationTransformResult {
   text: string;
+  displayText?: string;
   applied: string[];
   metadata: Record<string, unknown>;
 }
@@ -37,6 +38,9 @@ function detectFieldIntent(
   text: string,
 ): string {
   const app = String(targetApp ?? "").toLowerCase();
+  const normalizedText = text.trim();
+  const lineCount = normalizedText ? normalizedText.split(/\r?\n/).length : 0;
+
   if (app.includes("excel") || app.includes("sheets"))
     return "spreadsheet_cell";
   if (
@@ -46,9 +50,36 @@ function detectFieldIntent(
   )
     return "terminal";
   if (app.includes("slack") || app.includes("discord") || app.includes("teams"))
-    return "chat";
-  if (/^\s*[{[]/.test(text)) return "structured_input";
-  if (text.length > 240) return "long_form";
+    return "chat_message";
+
+  if (/^\s*(find|search|look up|query)\b/i.test(normalizedText)) {
+    return "search_box";
+  }
+  if (
+    /^\s*(re|fwd)\s*:/i.test(normalizedText) ||
+    /^subject\s*:/i.test(normalizedText)
+  ) {
+    return "email_subject";
+  }
+  if (
+    /^\s*(npm|pnpm|yarn|git|docker|kubectl|python|node|deno|go|cargo|composer)\b/i.test(
+      normalizedText,
+    )
+  ) {
+    return "command_line";
+  }
+  if (
+    /^\s*(select|insert|update|delete|with|create|alter|drop)\b/i.test(
+      normalizedText,
+    )
+  ) {
+    return "query_input";
+  }
+  if (/^\s*[{[]/.test(normalizedText)) return "structured_input";
+  if (/^\s*```/.test(normalizedText) || /^(\s{2,}|\t)\S/.test(normalizedText)) {
+    return "code_block";
+  }
+  if (lineCount > 4 || text.length > 240) return "editor_body";
   return "general";
 }
 
@@ -64,21 +95,16 @@ function healthGuard(input: string): { text: string; changes: number } {
   }
   return { text: out, changes };
 }
-
 function privacyFirewall(input: string): { text: string; blocked: number } {
   const patterns = [
     /\b(?:AKIA|ASIA)[A-Z0-9]{16}\b/g,
     /\bsk-[A-Za-z0-9]{20,}\b/g,
-    /\b\d{6}\b/g,
   ];
   let blocked = 0;
   let text = input;
   for (const pattern of patterns) {
-    text = text.replace(pattern, (value) => {
+    text = text.replace(pattern, () => {
       blocked += 1;
-      if (/^\d{6}$/.test(value)) {
-        return value;
-      }
       return "[REDACTED_SECRET]";
     });
   }
@@ -94,10 +120,12 @@ export function applyAutomationTransforms(params: {
   enableIntentFieldDetection: boolean;
   enableHealthGuard: boolean;
   enablePrivacyFirewall: boolean;
+  privacyRedactionMode?: "display_only" | "mutate_clipboard";
 }): AutomationTransformResult {
   const applied: string[] = [];
   const metadata: Record<string, unknown> = {};
   let output = params.text;
+  let displayText: string | undefined = undefined;
 
   if (params.enableHealthGuard) {
     const guarded = healthGuard(output);
@@ -127,25 +155,34 @@ export function applyAutomationTransforms(params: {
 
   if (params.enableLocaleAwareness) {
     const localized = normalizeLocaleFormatting(output);
-    output = localized.text;
     if (localized.changed) {
+      output = localized.text;
       applied.push("locale-awareness");
     }
   }
-
   if (params.enablePrivacyFirewall) {
     const firewall = privacyFirewall(output);
-    output = firewall.text;
     if (firewall.blocked > 0) {
       applied.push("privacy-firewall");
-      metadata["firewallBlocked"] = firewall.blocked;
+      metadata["secretsRedacted"] = firewall.blocked;
+      const redactionMode = params.privacyRedactionMode ?? "display_only";
+      metadata["privacyRedactionMode"] = redactionMode;
+      displayText = firewall.text;
+      if (redactionMode === "mutate_clipboard") {
+        output = firewall.text;
+      }
     }
   }
-
   if (params.enableIntentFieldDetection) {
     const intent = detectFieldIntent(params.targetApp, output);
     metadata["fieldIntent"] = intent;
     if (intent === "terminal") {
+      output = output.replace(/\r?\n/g, " && ");
+      applied.push("intent-terminal-flatten");
+    } else if (intent === "search_box") {
+      output = output.replace(/\r?\n/g, " ").trim();
+      applied.push("intent-search-flatten");
+    } else if (intent === "spreadsheet_cell") {
       output = output.replace(/\r\n/g, "\n");
     }
     applied.push("intent-aware-field-detection");
@@ -153,6 +190,7 @@ export function applyAutomationTransforms(params: {
 
   return {
     text: output,
+    displayText: displayText ?? output,
     applied,
     metadata,
   };

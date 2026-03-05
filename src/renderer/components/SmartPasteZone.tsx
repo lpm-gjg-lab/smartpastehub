@@ -1,6 +1,10 @@
+import { KeyboardIcon, MagicWandIcon } from "@radix-ui/react-icons";
+
 import React from "react";
 import styles from "../styles/components/SmartPasteZone.module.css";
 import { Button } from "./Button";
+import { DEFAULT_SETTINGS } from "../../shared/constants";
+import { useTranslation } from "react-i18next";
 
 interface SmartPasteZoneProps {
   inputText: string;
@@ -21,7 +25,10 @@ export const SmartPasteZone: React.FC<SmartPasteZoneProps> = ({
   pasteHotkeyHint,
   className,
 }) => {
+  const { t } = useTranslation();
   const charCount = inputText.length;
+  const textareaId = "smart-paste-input";
+  const hintId = "smart-paste-shortcut-hint";
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     // Submit on Ctrl+Enter
@@ -36,19 +43,27 @@ export const SmartPasteZone: React.FC<SmartPasteZoneProps> = ({
   return (
     <div className={`${styles.container} ${className || ""}`}>
       <div className={styles.textareaWrapper}>
+        <label htmlFor={textareaId} className="sr-only">
+          Paste content to clean
+        </label>
         <textarea
+          id={textareaId}
           className={styles.textarea}
           value={inputText}
           onChange={(e) => onInputChange(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder={`Paste anything here — or press ${pasteHotkeyHint ?? "Alt+Shift+V"} anywhere`}
+          placeholder={t("smart_paste_zone.placeholder", {
+            hotkey: pasteHotkeyHint ?? DEFAULT_SETTINGS.hotkeys.pasteClean,
+          })}
           spellCheck={false}
-          autoFocus
+          aria-describedby={hintId}
         />
 
         {!inputText && (
           <div className={styles.emptyState}>
             <svg
+              aria-hidden="true"
+              focusable="false"
               width="48"
               height="48"
               viewBox="0 0 24 24"
@@ -69,8 +84,8 @@ export const SmartPasteZone: React.FC<SmartPasteZoneProps> = ({
           </div>
         )}
 
-        <div className={styles.shortcutHint}>
-          ⌨ {pasteHotkeyHint ?? "Alt+Shift+V"}
+        <div id={hintId} className={styles.shortcutHint} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+          <KeyboardIcon /> {pasteHotkeyHint ?? DEFAULT_SETTINGS.hotkeys.pasteClean}
         </div>
       </div>
 
@@ -79,6 +94,8 @@ export const SmartPasteZone: React.FC<SmartPasteZoneProps> = ({
           {detectedType && (
             <div className={styles.detectedBadge}>
               <svg
+                aria-hidden="true"
+                focusable="false"
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
@@ -96,7 +113,9 @@ export const SmartPasteZone: React.FC<SmartPasteZoneProps> = ({
           )}
           {charCount > 0 && (
             <div className={styles.charCount}>
-              {charCount.toLocaleString()} chars
+              {t("smart_paste_zone.chars", {
+                count: charCount,
+              })}
             </div>
           )}
         </div>
@@ -108,7 +127,7 @@ export const SmartPasteZone: React.FC<SmartPasteZoneProps> = ({
           loading={isProcessing}
           size="md"
         >
-          Clean Now
+          <MagicWandIcon style={{ marginRight: 6 }} /> {t("smart_paste_zone.clean_now")}
         </Button>
       </div>
     </div>

@@ -2,22 +2,16 @@ import DatabaseDriver from 'better-sqlite3';
 import { app } from 'electron';
 import path from 'path';
 
-export class Database {
-  private db: DatabaseDriver.Database;
-
-  constructor() {
-    const dbPath = path.join(app.getPath('userData'), 'smartpastehub.db');
-    this.db = new DatabaseDriver(dbPath);
-    this.db.pragma('journal_mode = WAL');
-    this.db.pragma('synchronous = NORMAL');
-    this.db.pragma('mmap_size = 268435456');
-    this.db.pragma('cache_size = -8000');
-    this.initialize();
-    this.migrateSchema();
-  }
-
-  private initialize() {
-    this.db.exec(`
+// ── Versioned migrations ────────────────────────────────────────────────────
+// Each migration has a monotonically-increasing version number and a SQL body.
+// Migration history is tracked in the `_migrations` table.
+// To add a new migration: append a new entry at the END of this array.
+// Never edit or remove an existing entry — just add new ones.
+const MIGRATIONS: Array<{ version: number; name: string; sql: string }> = [
+  {
+    version: 1,
+    name: "initial_schema",
+    sql: `
       CREATE TABLE IF NOT EXISTS clipboard_history (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           original_text TEXT NOT NULL,
@@ -92,28 +86,80 @@ export class Database {
           enabled INTEGER NOT NULL DEFAULT 1,
           sort_order INTEGER NOT NULL DEFAULT 0
       );
+    `,
+  },
+  {
+    version: 2,
+    name: "seed_default_regex_rules",
+    sql: `
+      INSERT OR IGNORE INTO regex_rules (id, name, pattern, replacement, flags) VALUES
+        (1, 'Hapus URL', 'https?://\\S+', '', 'g'),
+        (2, 'Hapus Emoji', '[\\u{1F600}-\\u{1F64F}\\u{1F300}-\\u{1F5FF}\\u{1F680}-\\u{1F6FF}]', '', 'gu'),
+        (3, 'Format Nomor HP', '(\\+62|62|0)(8\\d{2})(\\d{4})(\\d{3,4})', '+62 $2-$3-$4', 'g');
+    `,
+  },
+  {
+    version: 3,
+    name: "add_ai_mode_to_history",
+    sql: `ALTER TABLE clipboard_history ADD COLUMN ai_mode TEXT;`,
+  },
+];
+
+export class Database {
+  private db: DatabaseDriver.Database;
+
+  constructor() {
+    const dbPath = path.join(app.getPath('userData'), 'smartpastehub.db');
+    this.db = new DatabaseDriver(dbPath);
+    this.db.pragma('journal_mode = WAL');
+    this.db.pragma('synchronous = NORMAL');
+    this.db.pragma('mmap_size = 268435456');
+    this.db.pragma('cache_size = -8000');
+    this.runMigrations();
+  }
+
+  private runMigrations(): void {
+    // Ensure the migrations tracking table exists
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS _migrations (
+        version INTEGER PRIMARY KEY,
+        name TEXT NOT NULL,
+        applied_at TEXT NOT NULL DEFAULT (datetime('now'))
+      );
     `);
 
-    const existing = this.db.prepare('SELECT COUNT(*) as count FROM regex_rules').get() as { count: number };
-    if (existing.count === 0) {
-      this.db.prepare(
-        `INSERT INTO regex_rules (name, pattern, replacement, flags) VALUES
-          ('Hapus URL', 'https?://\\S+', '', 'g'),
-          ('Hapus Emoji', '[\\u{1F600}-\\u{1F64F}\\u{1F300}-\\u{1F5FF}\\u{1F680}-\\u{1F6FF}]', '', 'gu'),
-          ('Format Nomor HP', '(\\+62|62|0)(8\\d{2})(\\d{4})(\\d{3,4})', '+62 $2-$3-$4', 'g')
-        `,
-      ).run();
+    const appliedVersions = new Set<number>(
+      (
+        this.db
+          .prepare('SELECT version FROM _migrations')
+          .all() as { version: number }[]
+      ).map((row) => row.version),
+    );
+
+    const insertMigration = this.db.prepare(
+      'INSERT INTO _migrations (version, name) VALUES (?, ?)',
+    );
+
+    for (const migration of MIGRATIONS) {
+      if (appliedVersions.has(migration.version)) continue;
+      // Run each migration inside a transaction so partial failures roll back
+      const execute = this.db.transaction(() => {
+        try {
+          this.db.exec(migration.sql);
+        } catch (err) {
+          // ALTER TABLE throws if the column already exists (pre-migration DB).
+          // Detect this specific case and ignore it; other errors are re-thrown.
+          const msg = err instanceof Error ? err.message : String(err);
+          if (!msg.toLowerCase().includes('duplicate column')) {
+            throw err;
+          }
+        }
+        insertMigration.run(migration.version, migration.name);
+      });
+      execute();
     }
   }
 
-  private migrateSchema() {
-    // Add ai_mode column if it doesn't exist yet (safe migration)
-    try {
-      this.db.exec("ALTER TABLE clipboard_history ADD COLUMN ai_mode TEXT");
-    } catch {
-      // Column already exists — safe to ignore
-    }
-  }
   run(sql: string, params?: unknown[]) {
     return this.db.prepare(sql).run(params ?? []);
   }

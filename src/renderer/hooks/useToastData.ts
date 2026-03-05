@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
 import { onIPC } from "../lib/ipc";
+import { SensitiveMatch } from "../../shared/types";
 
 export interface ToastData {
   cleaned: string;
   original: string;
   changes?: string[];
   type: string;
-  securityAlert?: unknown;
+  securityAlert?: { matches: SensitiveMatch[]; text: string };
   isMerged?: boolean;
   mergedCount?: number;
   sourceApp?: string;

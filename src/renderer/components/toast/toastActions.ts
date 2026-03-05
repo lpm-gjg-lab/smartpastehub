@@ -229,17 +229,12 @@ export async function runToastAction(
     setIsAiLoading(false);
   } else if (action === "dismiss") {
     // Dismiss: immediately close the HUD without clipboard changes
-    if (data.type === "paste_preview") {
-      await invoke("automation:cancel-preview");
-    }
     scheduleClose(0);
     return;
   } else if (action === "confirm_preview") {
-    await invoke("automation:confirm-preview");
     scheduleClose(0);
     return;
   } else if (action === "cancel_preview") {
-    await invoke("automation:cancel-preview");
     scheduleClose(0);
     return;
   } else if (action.startsWith("palette_select:")) {
@@ -260,13 +255,13 @@ export async function runToastAction(
       await invoke("automation:paste-feedback", {
         appName: data.sourceApp,
         contentType: data.contentType,
+        fieldIntent: data.fieldIntent,
         expectedIntent: data.strategyIntent,
         weight: 2,
       });
       setData({
         ...data,
-        cleaned:
-          "👍 Feedback saved. Strategy reinforced for next similar paste.",
+        cleaned: "Feedback saved. Strategy reinforced for next similar paste.",
       });
       scheduleClose(1200);
       return;
@@ -281,12 +276,13 @@ export async function runToastAction(
       await invoke("automation:paste-feedback", {
         appName: data.sourceApp,
         contentType: data.contentType,
+        fieldIntent: data.fieldIntent,
         expectedIntent,
         weight: 3,
       });
       setData({
         ...data,
-        cleaned: "🧠 Learned for next paste. Current paste left unchanged.",
+        cleaned: "Learned for next paste. Current paste left unchanged.",
       });
       scheduleClose(1300);
       return;
@@ -305,12 +301,45 @@ export async function runToastAction(
       setData({
         ...data,
         cleaned: res?.appliedNow
-          ? "🛠 Fixed now and reapplied. Learned for future pastes."
-          : "🧠 Learned for future pastes.",
+          ? "Fixed now and reapplied. Learned for future pastes."
+          : "Learned for future pastes.",
       });
       scheduleClose(1400);
       return;
     }
+  } else if (action === "paste_as_is") {
+    // Paste: write cleaned text to clipboard (unmasked) and close
+    await invoke("clipboard:write", { text: data.cleaned });
+    setCopied(true);
+    scheduleClose(500);
+    return;
+  } else if (action === "mask_and_paste") {
+    // Mask & Paste: mask PII in cleaned text, write to clipboard, and close
+    if (data.securityAlert && data.securityAlert.matches.length > 0) {
+      try {
+        const settings = await invoke<{ security?: { maskMode?: string } }>(
+          "settings:get",
+        );
+        const mode =
+          (settings?.security?.maskMode as "full" | "partial" | "smart") ??
+          "smart";
+        const masked = await invoke<string>("security:mask", {
+          text: data.cleaned,
+          matches: data.securityAlert.matches,
+          mode,
+        });
+        if (masked) {
+          newText = masked;
+          setData({ ...data, cleaned: newText });
+        }
+      } catch (err) {
+        console.error("Mask and paste failed", err);
+      }
+    }
+    await invoke("clipboard:write", { text: newText });
+    setCopied(true);
+    scheduleClose(800);
+    return;
   } else if (action === "copy") {
     // Copy: write cleaned text as-is (no transform)
     newText = data.cleaned;

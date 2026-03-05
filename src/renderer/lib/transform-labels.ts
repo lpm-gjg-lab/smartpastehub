@@ -97,6 +97,78 @@ const TRANSFORM_LABELS: Record<string, TransformLabel> = {
     description: 'Content policy enforced',
     icon: '🛡️',
   },
+  'json-formatter': {
+    id: 'json-formatter',
+    label: 'JSON Format',
+    description: 'Pretty-printed JSON/YAML/TOML',
+    icon: '📋',
+  },
+  'code-indent-fixer': {
+    id: 'code-indent-fixer',
+    label: 'Indent Fix',
+    description: 'Fixed mixed indentation',
+    icon: '⇥',
+  },
+  'duplicate-line-remover': {
+    id: 'duplicate-line-remover',
+    label: 'Dedup Lines',
+    description: 'Removed duplicate lines',
+    icon: '🧹',
+  },
+  'timestamp-converter': {
+    id: 'timestamp-converter',
+    label: 'Timestamp',
+    description: 'Converted timestamp format',
+    icon: '⏱️',
+  },
+  'path-converter': {
+    id: 'path-converter',
+    label: 'Path Convert',
+    description: 'Converted file path format',
+    icon: '📁',
+  },
+  'base64-codec': {
+    id: 'base64-codec',
+    label: 'Base64 Decode',
+    description: 'Decoded Base64 content',
+    icon: '🔓',
+  },
+  'color-converter': {
+    id: 'color-converter',
+    label: 'Color Convert',
+    description: 'Converted color format',
+    icon: '🎨',
+  },
+  'math-evaluator': {
+    id: 'math-evaluator',
+    label: 'Math Result',
+    description: 'Evaluated math expression',
+    icon: '🧮',
+  },
+  'sensitive-masker': {
+    id: 'sensitive-masker',
+    label: 'PII Masked',
+    description: 'Masked sensitive data',
+    icon: '🔒',
+  },
+  'case-converter': {
+    id: 'case-converter',
+    label: 'Case Convert',
+    description: 'Converted text case',
+    icon: '🔤',
+  },
+  'list-sorter': {
+    id: 'list-sorter',
+    label: 'List Sort',
+    description: 'Sorted list items',
+    icon: '↕️',
+  },
+  'slug-generator': {
+    id: 'slug-generator',
+    label: 'Slug',
+    description: 'Generated URL slug',
+    icon: '🔗',
+  },
 };
 
 export function getTransformLabel(changeId: string): TransformLabel {

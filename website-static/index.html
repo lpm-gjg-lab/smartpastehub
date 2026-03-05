@@ -1,0 +1,508 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SmartPasteHub — Intelligent Clipboard Assistant for Windows</title>
+    <meta name="description"
+        content="Free & open-source clipboard manager that auto-cleans, formats, and transforms clipboard content. OCR, AI rewrite, multi-copy, ghost write — all on Alt+Shift+V." />
+    <meta property="og:title" content="SmartPasteHub — Smarter Paste, Every Time" />
+    <meta property="og:description"
+        content="Free Windows clipboard manager with 20+ auto-fix transforms, OCR, AI rewrite, and smart context rules." />
+    <meta property="og:type" content="website" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Sora:wght@600;700;800&display=swap"
+        rel="stylesheet" />
+    <link rel="stylesheet" href="./styles.css" />
+</head>
+
+<body>
+
+    <!-- Animated background orbs -->
+    <div class="bg-orbs" aria-hidden="true">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+    </div>
+
+    <!-- NAVBAR -->
+    <header class="navbar" id="top">
+        <nav class="nav-inner">
+            <a href="#top" class="nav-logo">
+                <span class="logo-icon">⌘</span>
+                <span class="logo-text">SmartPasteHub</span>
+            </a>
+            <div class="nav-links">
+                <a href="#stats">Live Stats</a>
+                <a href="#features">Features</a>
+                <a href="#pipeline">How It Works</a>
+                <a href="#hotkeys">Hotkeys</a>
+            </div>
+            <a class="btn btn-primary nav-cta" href="https://github.com/rhazis09/smartpastehub/releases/latest"
+                target="_blank" rel="noreferrer">Download Free</a>
+        </nav>
+    </header>
+
+    <main>
+
+        <!-- HERO -->
+        <section class="hero">
+            <div class="hero-inner">
+                <p class="eyebrow">Free &amp; Open Source · Windows</p>
+                <h1 class="hero-title">
+                    <span class="gradient-text">Smarter Paste,</span><br />
+                    Every Time.
+                </h1>
+                <p class="hero-sub">
+                    The clipboard manager that silently cleans, formats, and transforms
+                    what you paste — automatically. No config needed to start.
+                </p>
+                <div class="hero-actions">
+                    <a class="btn btn-primary btn-lg" href="https://github.com/rhazis09/smartpastehub/releases/latest"
+                        target="_blank" rel="noreferrer">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                            <polyline points="7 10 12 15 17 10" />
+                            <line x1="12" y1="15" x2="12" y2="3" />
+                        </svg>
+                        Download Latest
+                    </a>
+                    <a class="btn btn-ghost btn-lg" href="https://github.com/rhazis09/smartpastehub" target="_blank"
+                        rel="noreferrer">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                            <path
+                                d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z" />
+                        </svg>
+                        View on GitHub
+                    </a>
+                </div>
+                <div class="hero-badge">
+                    <kbd>Alt</kbd><span>+</span><kbd>Shift</kbd><span>+</span><kbd>V</kbd>
+                    <span class="badge-label">Smart Paste Anywhere</span>
+                </div>
+            </div>
+            <div class="hero-visual" aria-hidden="true">
+                <div class="terminal-mock">
+                    <div class="terminal-header">
+                        <span class="dot dot-red"></span>
+                        <span class="dot dot-yellow"></span>
+                        <span class="dot dot-green"></span>
+                        <span class="terminal-title">SmartPasteHub HUD</span>
+                    </div>
+                    <div class="terminal-body">
+                        <div class="hud-item hud-item-1"><span class="hud-icon">✓</span> unicode-cleaner</div>
+                        <div class="hud-item hud-item-2"><span class="hud-icon">✓</span> html-stripper</div>
+                        <div class="hud-item hud-item-3"><span class="hud-icon">✓</span> whitespace-normalizer</div>
+                        <div class="hud-item hud-item-4"><span class="hud-icon">✓</span> email-cleaner</div>
+                        <div class="hud-divider"></div>
+                        <div class="hud-result">4 transforms applied <span class="pulse-dot"></span></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- LIVE STATS -->
+        <section class="section" id="stats">
+            <div class="section-inner">
+                <div class="section-label">
+                    <span class="live-dot" aria-label="live"></span>
+                    Community Impact
+                </div>
+                <h2 class="section-title">Used by real people, every day.</h2>
+                <p class="section-sub">Stats updated in real-time from connected devices. App is 100% free — no account
+                    required.</p>
+
+                <div class="stats-grid">
+                    <article class="stat-card">
+                        <div class="stat-icon">🖥️</div>
+                        <div class="stat-value" data-stat-key="total_devices">—</div>
+                        <div class="stat-label">Active Devices</div>
+                    </article>
+                    <article class="stat-card stat-card-accent">
+                        <div class="stat-icon">📋</div>
+                        <div class="stat-value" data-stat-key="total_pastes">—</div>
+                        <div class="stat-label">Total Pastes</div>
+                    </article>
+                    <article class="stat-card">
+                        <div class="stat-icon">✨</div>
+                        <div class="stat-value" data-stat-key="total_chars_cleaned">—</div>
+                        <div class="stat-label">Characters Cleaned</div>
+                    </article>
+                    <article class="stat-card">
+                        <div class="stat-icon">🤖</div>
+                        <div class="stat-value" data-stat-key="total_ai_rewrites">—</div>
+                        <div class="stat-label">AI Rewrites</div>
+                    </article>
+                    <article class="stat-card">
+                        <div class="stat-icon">📷</div>
+                        <div class="stat-value" data-stat-key="total_ocr">—</div>
+                        <div class="stat-label">OCR Captures</div>
+                    </article>
+                    <article class="stat-card">
+                        <div class="stat-icon">🌐</div>
+                        <div class="stat-value" data-stat-key="total_translates">—</div>
+                        <div class="stat-label">Translations</div>
+                    </article>
+                </div>
+                <p class="stats-note" id="stats-note">Fetching live data…</p>
+            </div>
+        </section>
+
+        <!-- FEATURES -->
+        <section class="section section-alt" id="features">
+            <div class="section-inner">
+                <div class="section-label">Features</div>
+                <h2 class="section-title">Everything your clipboard was missing.</h2>
+                <p class="section-sub">20+ intelligent transforms run silently on every paste. Zero friction, maximum
+                    quality.</p>
+
+                <div class="features-grid">
+                    <article class="feature-card feature-card-wide">
+                        <div class="feature-icon-wrap" style="--icon-color: #60a5fa;">
+                            <span class="feature-icon">⚡</span>
+                        </div>
+                        <h3>Auto-Clean on Paste</h3>
+                        <p>Hit <kbd class="inline-kbd">Alt+Shift+V</kbd> instead of Ctrl+V. SmartPasteHub intercepts the
+                            clipboard, runs the full transform pipeline, and pastes clean output into any app —
+                            silently.</p>
+                    </article>
+                    <article class="feature-card">
+                        <div class="feature-icon-wrap" style="--icon-color: #a78bfa;">
+                            <span class="feature-icon">🤖</span>
+                        </div>
+                        <h3>AI Rewrite</h3>
+                        <p>Grammar fix, rephrase, formalize, summarize, translate and more. Bring your own API key.</p>
+                    </article>
+                    <article class="feature-card">
+                        <div class="feature-icon-wrap" style="--icon-color: #34d399;">
+                            <span class="feature-icon">📷</span>
+                        </div>
+                        <h3>OCR Screenshot</h3>
+                        <p>Snap any screen area and extract text instantly. Press <kbd
+                                class="inline-kbd">Ctrl+Alt+S</kbd> — done.</p>
+                    </article>
+                    <article class="feature-card">
+                        <div class="feature-icon-wrap" style="--icon-color: #fb923c;">
+                            <span class="feature-icon">📚</span>
+                        </div>
+                        <h3>Multi-Copy &amp; Paste Queue</h3>
+                        <p>Collect multiple clips and merge them. Enqueue items and paste one at a time.</p>
+                    </article>
+                    <article class="feature-card">
+                        <div class="feature-icon-wrap" style="--icon-color: #f472b6;">
+                            <span class="feature-icon">👻</span>
+                        </div>
+                        <h3>Ghost Write</h3>
+                        <p>Type prepared text into any window — even when direct paste is blocked or detected.</p>
+                    </article>
+                    <article class="feature-card">
+                        <div class="feature-icon-wrap" style="--icon-color: #fbbf24;">
+                            <span class="feature-icon">🔒</span>
+                        </div>
+                        <h3>PII Security Scanner</h3>
+                        <p>Detects API keys, emails, phone numbers. Prompts to Mask &amp; Paste before sensitive data
+                            leaks.</p>
+                    </article>
+                    <article class="feature-card">
+                        <div class="feature-icon-wrap" style="--icon-color: #38bdf8;">
+                            <span class="feature-icon">🧠</span>
+                        </div>
+                        <h3>Smart Context Rules</h3>
+                        <p>Detects copy source and paste target. Applies different presets automatically (e.g. code
+                            passthrough to terminal).</p>
+                    </article>
+                    <article class="feature-card feature-card-wide">
+                        <div class="feature-icon-wrap" style="--icon-color: #a3e635;">
+                            <span class="feature-icon">🔤</span>
+                        </div>
+                        <h3>Unicode Safety Net</h3>
+                        <p>Fixes mojibake, NBSP, smart quotes, zero-width characters, soft hyphens, CRLF, and fullwidth
+                            ASCII — automatically on every paste. Your text always lands clean.</p>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <!-- PIPELINE -->
+        <section class="section" id="pipeline">
+            <div class="section-inner">
+                <div class="section-label">How It Works</div>
+                <h2 class="section-title">A 20-step pipeline, invisible to you.</h2>
+                <p class="section-sub">Every SmartPaste runs through an ordered stack of middlewares in milliseconds.
+                </p>
+
+                <div class="pipeline-wrap">
+                    <div class="pipeline-flow">
+                        <div class="pipeline-node pipeline-node-copy">
+                            <span class="pn-icon">📋</span>
+                            <span class="pn-label">Copy from any app</span>
+                        </div>
+                        <div class="pipeline-arrow">↓</div>
+                        <div class="pipeline-node pipeline-node-hotkey">
+                            <span class="pn-icon">⌨️</span>
+                            <span class="pn-label"><kbd>Alt+Shift+V</kbd></span>
+                        </div>
+                        <div class="pipeline-arrow">↓</div>
+                        <div class="pipeline-node pipeline-node-context">
+                            <span class="pn-icon">🧠</span>
+                            <span class="pn-label">Context Rule Matched?</span>
+                        </div>
+                        <div class="pipeline-arrow">↓</div>
+                    </div>
+                    <div class="pipeline-steps-grid">
+                        <div class="pipeline-step" style="--step-delay: 0ms">
+                            <span class="ps-num">01</span>unicode-cleaner
+                        </div>
+                        <div class="pipeline-step" style="--step-delay: 50ms">
+                            <span class="ps-num">02</span>html-stripper
+                        </div>
+                        <div class="pipeline-step" style="--step-delay: 100ms">
+                            <span class="ps-num">03</span>line-break-fixer
+                        </div>
+                        <div class="pipeline-step" style="--step-delay: 150ms">
+                            <span class="ps-num">04</span>code-indent-fixer
+                        </div>
+                        <div class="pipeline-step" style="--step-delay: 200ms">
+                            <span class="ps-num">05</span>table-converter
+                        </div>
+                        <div class="pipeline-step" style="--step-delay: 250ms">
+                            <span class="ps-num">06</span>json-formatter
+                        </div>
+                        <div class="pipeline-step" style="--step-delay: 300ms">
+                            <span class="ps-num">07</span>email-cleaner
+                        </div>
+                        <div class="pipeline-step" style="--step-delay: 350ms">
+                            <span class="ps-num">08</span>url-cleaner
+                        </div>
+                        <div class="pipeline-step" style="--step-delay: 400ms">
+                            <span class="ps-num">09</span>phone-normalizer
+                        </div>
+                        <div class="pipeline-step" style="--step-delay: 450ms">
+                            <span class="ps-num">10</span>timestamp-converter
+                        </div>
+                        <div class="pipeline-step" style="--step-delay: 500ms">
+                            <span class="ps-num">11</span>path-converter
+                        </div>
+                        <div class="pipeline-step" style="--step-delay: 550ms">
+                            <span class="ps-num">12</span>color-converter
+                        </div>
+                        <div class="pipeline-step" style="--step-delay: 600ms">
+                            <span class="ps-num">13</span>math-evaluator
+                        </div>
+                        <div class="pipeline-step" style="--step-delay: 650ms">
+                            <span class="ps-num">14</span>markdown-cleaner
+                        </div>
+                        <div class="pipeline-step" style="--step-delay: 700ms">
+                            <span class="ps-num">15</span>base64-codec
+                        </div>
+                        <div class="pipeline-step" style="--step-delay: 750ms">
+                            <span class="ps-num">16</span>duplicate-line-remover
+                        </div>
+                        <div class="pipeline-step" style="--step-delay: 800ms">
+                            <span class="ps-num">17</span>whitespace-normalizer
+                        </div>
+                        <div class="pipeline-step" style="--step-delay: 850ms">
+                            <span class="ps-num">18</span>symbol-stripper
+                        </div>
+                        <div class="pipeline-step" style="--step-delay: 900ms">
+                            <span class="ps-num">19</span>regex-transformer
+                        </div>
+                        <div class="pipeline-step pipeline-step-ai" style="--step-delay: 950ms">
+                            <span class="ps-num">20</span>ai-rewriter ✨
+                        </div>
+                    </div>
+                    <div class="pipeline-flow">
+                        <div class="pipeline-arrow">↓</div>
+                        <div class="pipeline-node pipeline-node-done">
+                            <span class="pn-icon">✅</span>
+                            <span class="pn-label">Clean text pasted + HUD toast shown</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- HOTKEYS -->
+        <section class="section section-alt" id="hotkeys">
+            <div class="section-inner">
+                <div class="section-label">Default Hotkeys</div>
+                <h2 class="section-title">Keyboard-first, always.</h2>
+                <p class="section-sub">All hotkeys are configurable in Settings. Start without touching a single config
+                    file.</p>
+
+                <div class="hotkeys-grid">
+                    <div class="hotkey-card">
+                        <div class="hotkey-combo">
+                            <kbd>Alt</kbd><span>+</span><kbd>Shift</kbd><span>+</span><kbd>V</kbd>
+                        </div>
+                        <div class="hotkey-desc">Smart Paste — clean &amp; paste</div>
+                    </div>
+                    <div class="hotkey-card">
+                        <div class="hotkey-combo">
+                            <kbd>Ctrl</kbd><span>+</span><kbd>Alt</kbd><span>+</span><kbd>H</kbd>
+                        </div>
+                        <div class="hotkey-desc">Open clipboard history ring</div>
+                    </div>
+                    <div class="hotkey-card">
+                        <div class="hotkey-combo">
+                            <kbd>Ctrl</kbd><span>+</span><kbd>Alt</kbd><span>+</span><kbd>S</kbd>
+                        </div>
+                        <div class="hotkey-desc">OCR screenshot → clipboard</div>
+                    </div>
+                    <div class="hotkey-card">
+                        <div class="hotkey-combo">
+                            <kbd>Ctrl</kbd><span>+</span><kbd>Alt</kbd><span>+</span><kbd>C</kbd>
+                        </div>
+                        <div class="hotkey-desc">Start multi-copy collection</div>
+                    </div>
+                    <div class="hotkey-card">
+                        <div class="hotkey-combo">
+                            <kbd>Ctrl</kbd><span>+</span><kbd>Alt</kbd><span>+</span><kbd>G</kbd>
+                        </div>
+                        <div class="hotkey-desc">Ghost write into active window</div>
+                    </div>
+                    <div class="hotkey-card">
+                        <div class="hotkey-combo">
+                            <kbd>Ctrl</kbd><span>+</span><kbd>Alt</kbd><span>+</span><kbd>T</kbd>
+                        </div>
+                        <div class="hotkey-desc">Translate clipboard</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CTA -->
+        <section class="section cta-section">
+            <div class="section-inner cta-inner">
+                <div class="cta-glow" aria-hidden="true"></div>
+                <p class="eyebrow" style="color: var(--accent-teal);">Free. No account. No telemetry opt-in required.
+                </p>
+                <h2 class="cta-title">Your clipboard deserves better.</h2>
+                <p class="section-sub">Open-source under MIT License. Download, inspect, contribute.</p>
+                <div class="cta-actions">
+                    <a class="btn btn-primary btn-lg" href="https://github.com/rhazis09/smartpastehub/releases/latest"
+                        target="_blank" rel="noreferrer">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                            <polyline points="7 10 12 15 17 10" />
+                            <line x1="12" y1="15" x2="12" y2="3" />
+                        </svg>
+                        Download for Windows
+                    </a>
+                    <a class="btn btn-ghost btn-lg" href="https://github.com/rhazis09/smartpastehub" target="_blank"
+                        rel="noreferrer">Star on GitHub ⭐</a>
+                </div>
+                <div class="cta-badges">
+                    <span class="badge">MIT License</span>
+                    <span class="badge">Windows 10 / 11</span>
+                    <span class="badge">v0.1.0</span>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="footer">
+        <div class="footer-inner">
+            <div class="footer-brand">
+                <span class="logo-icon">⌘</span>
+                <span class="logo-text">SmartPasteHub</span>
+            </div>
+            <div class="footer-links">
+                <a href="https://github.com/rhazis09/smartpastehub" target="_blank" rel="noreferrer">GitHub</a>
+                <a href="https://github.com/rhazis09/smartpastehub/releases/latest" target="_blank"
+                    rel="noreferrer">Download</a>
+                <a href="https://github.com/rhazis09/smartpastehub/tree/main/docs" target="_blank"
+                    rel="noreferrer">Docs</a>
+                <a href="https://github.com/rhazis09/smartpastehub/blob/main/CONTRIBUTING.md" target="_blank"
+                    rel="noreferrer">Contribute</a>
+            </div>
+            <div class="footer-copy">© 2025 SmartPasteHub — MIT License</div>
+        </div>
+    </footer>
+
+    <script>
+        // ─── NAVBAR SCROLL GLASS ─────────────────────────────────────
+        const navbar = document.getElementById('top').nextElementSibling
+            ? document.querySelector('.navbar')
+            : document.querySelector('.navbar');
+        window.addEventListener('scroll', () => {
+            document.querySelector('.navbar').classList.toggle('scrolled', window.scrollY > 40);
+        });
+
+        // ─── INTERSECTION OBSERVER for .reveal ───────────────────────
+        const revealEls = document.querySelectorAll('.section, .feature-card, .stat-card, .hotkey-card, .pipeline-step');
+        const revealObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('in-view');
+                    revealObserver.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.08 });
+        revealEls.forEach(el => revealObserver.observe(el));
+
+        // ─── LIVE STATS ──────────────────────────────────────────────
+        const statNodes = Array.from(document.querySelectorAll('[data-stat-key]'));
+        const statsNote = document.getElementById('stats-note');
+
+        function formatCompact(value) {
+            if (!Number.isFinite(value) || value <= 0) return '0';
+            if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
+            if (value >= 1_000) return `${(value / 1_000).toFixed(1)}K`;
+            return value.toLocaleString();
+        }
+
+        function animateCount(node, target) {
+            const duration = 1400;
+            const start = performance.now();
+            const safeTarget = Math.max(0, Math.floor(Number(target) || 0));
+            function frame(now) {
+                const progress = Math.min((now - start) / duration, 1);
+                const eased = 1 - Math.pow(1 - progress, 3);
+                node.textContent = formatCompact(Math.floor(safeTarget * eased));
+                if (progress < 1) requestAnimationFrame(frame);
+                else node.textContent = formatCompact(safeTarget);
+            }
+            requestAnimationFrame(frame);
+        }
+
+        async function loadStats() {
+            try {
+                const res = await fetch('/api/stats', { method: 'GET' });
+                if (!res.ok) throw new Error('request-failed');
+                const data = await res.json();
+                let hasData = false;
+                statNodes.forEach(node => {
+                    const key = node.getAttribute('data-stat-key');
+                    const value = Number(data[key]);
+                    if (Number.isFinite(value) && value > 0) {
+                        hasData = true;
+                        animateCount(node, value);
+                    } else {
+                        node.textContent = '0';
+                    }
+                });
+                if (statsNote) {
+                    statsNote.textContent = hasData
+                        ? `Last updated ${new Date().toLocaleTimeString()}`
+                        : 'No data yet — be the first to install!';
+                }
+            } catch {
+                statNodes.forEach(node => { node.textContent = '—'; });
+                if (statsNote) statsNote.textContent = 'Stats unavailable — try again later.';
+            }
+        }
+
+        loadStats();
+        setInterval(loadStats, 60_000);
+    </script>
+</body>
+
+</html>

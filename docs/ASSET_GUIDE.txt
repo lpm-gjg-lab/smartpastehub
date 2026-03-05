@@ -1,0 +1,538 @@
+# SmartPasteHub — Asset & Logo Specification Guide
+
+Dokumen lengkap untuk membuat ulang seluruh logo dan aset visual SmartPasteHub.
+
+---
+
+## 1. Brand Identity
+
+| Property         | Value                                                                           |
+| ---------------- | ------------------------------------------------------------------------------- |
+| **Product Name** | SmartPasteHub                                                                   |
+| **Tagline**      | Intelligent Clipboard Assistant for Windows                                     |
+| **App ID**       | `com.smartpastehub.app`                                                         |
+| **Author**       | Smart Paste Hub                                                                 |
+| **Description**  | Smart clipboard manager with AI-powered formatting, translation, and automation |
+
+### Brand Personality
+
+- **Modern & Minimal** — flat design, no gradients/shadows/3D
+- **Productivity-focused** — clean, professional, utilitarian
+- **Tech-forward** — vector aesthetic, geometric precision
+
+---
+
+## 2. Logo Saat Ini (Referensi)
+
+Logo saat ini (`logo.png`) berupa:
+
+- **Dokumen icon** abu-abu gelap (charcoal) dengan dog-ear di kanan atas
+- **Checkmark** hijau teal/emerald yang overlap di sisi kanan dokumen
+- **2 sparkle** (bintang 4-titik) warna teal di ujung checkmark
+- **Gaya**: Flat/minimalis, vector, tanpa teks
+- **Ukuran master**: 1024×1024 px (rasio 1:1)
+- **Warna utama**: Charcoal dark gray + Teal/Emerald green + White
+
+### Warna Palette (Current)
+
+| Color         | Hex (Estimasi)           | Penggunaan                   |
+| ------------- | ------------------------ | ---------------------------- |
+| Charcoal Gray | `#3C3C3C`                | Badan dokumen                |
+| Teal/Emerald  | `#10B981` atau `#0D9488` | Checkmark & sparkles         |
+| White         | `#FFFFFF`                | Background, border separator |
+
+---
+
+## 3. Daftar Lengkap Aset yang Dibutuhkan
+
+### 3.1 Master Logo Source
+
+| File                      | Format   | Ukuran Canvas | Keterangan                                                                  |
+| ------------------------- | -------- | ------------- | --------------------------------------------------------------------------- |
+| `logo-master.svg`         | SVG      | Scalable      | **File master utama.** Semua aset lain di-generate dari sini. Wajib vector. |
+| `logo-master.png`         | PNG      | 2048×2048 px  | Raster hi-res untuk keperluan print/marketing                               |
+| `logo-master.ai` / `.fig` | AI/Figma | Scalable      | Source file editable (opsional, tergantung tool)                            |
+
+### 3.2 Electron Desktop App — Icons
+
+| File           | Path Target                        | Format           | Ukuran                             | Keterangan                                                                                    |
+| -------------- | ---------------------------------- | ---------------- | ---------------------------------- | --------------------------------------------------------------------------------------------- |
+| `icon.ico`     | `assets/icons/icon.ico`            | ICO (multi-size) | 16, 24, 32, 48, 64, 128, 256 px    | Windows app icon. **Harus multi-resolution ICO.** Dipakai oleh electron-builder (`win.icon`)  |
+| `icon.ico`     | `build/icon.ico`                   | ICO (multi-size) | 16, 24, 32, 48, 64, 128, 256 px    | Fallback builder icon                                                                         |
+| `icon.icns`    | `assets/icons/icon.icns`           | ICNS             | 16, 32, 64, 128, 256, 512, 1024 px | macOS app icon (`mac.icon`)                                                                   |
+| `icon.png`     | `assets/tray/icon.png`             | PNG              | 16×16 px (+ @2x 32×32)             | **System tray icon.** Harus jelas di ukuran kecil. Pertimbangkan versi monochrome/simplified. |
+| `app-logo.png` | `src/renderer/assets/app-logo.png` | PNG              | 128×128 px atau 256×256 px         | In-app logo di sidebar & onboarding. Ditampilkan di 32×32 CSS px (lihat section 5).           |
+| `logo.png`     | `./logo.png` (root)                | PNG              | 1024×1024 px                       | Logo utama, di-bundle ke dalam app (`extraResources`). Untuk splash/about screen.             |
+
+### 3.3 NSIS Installer Icons (Windows)
+
+| File                    | Path Target                  | Format | Ukuran                            | Keterangan                                      |
+| ----------------------- | ---------------------------- | ------ | --------------------------------- | ----------------------------------------------- |
+| `icon.ico`              | `assets/icons/icon.ico`      | ICO    | Multi-size (sama dengan app icon) | `nsis.installerIcon` dan `nsis.uninstallerIcon` |
+| `installer-header.bmp`  | `build/installerHeader.bmp`  | BMP    | 150×57 px                         | Header image NSIS installer (opsional)          |
+| `installer-sidebar.bmp` | `build/installerSidebar.bmp` | BMP    | 164×314 px                        | Sidebar image NSIS installer (opsional)         |
+
+### 3.4 Browser Extension (Chrome/Edge)
+
+| File           | Path Target                    | Format | Ukuran     | Keterangan                        |
+| -------------- | ------------------------------ | ------ | ---------- | --------------------------------- |
+| `icon-16.png`  | `extension/icons/icon-16.png`  | PNG    | 16×16 px   | Favicon toolbar                   |
+| `icon-32.png`  | `extension/icons/icon-32.png`  | PNG    | 32×32 px   | Windows tile                      |
+| `icon-48.png`  | `extension/icons/icon-48.png`  | PNG    | 48×48 px   | Extension management page         |
+| `icon-128.png` | `extension/icons/icon-128.png` | PNG    | 128×128 px | Chrome Web Store & install dialog |
+
+**manifest.json update yang diperlukan:**
+
+```json
+{
+  "icons": {
+    "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
+  "action": {
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "32": "icons/icon-32.png"
+    }
+  }
+}
+```
+
+### 3.5 Mobile App (React Native — Planned)
+
+| File                         | Path Target                                                    | Format | Ukuran       | Keterangan                                   |
+| ---------------------------- | -------------------------------------------------------------- | ------ | ------------ | -------------------------------------------- |
+| `ic_launcher.png`            | `mobile/android/app/src/main/res/mipmap-xxxhdpi/`              | PNG    | 192×192 px   | Android launcher icon                        |
+| `ic_launcher_round.png`      | Sama                                                           | PNG    | 192×192 px   | Android round icon variant                   |
+| `ic_launcher_foreground.png` | Sama                                                           | PNG    | 432×432 px   | Android adaptive icon foreground (108dp × 4) |
+| `AppIcon.png`                | `mobile/ios/SmartPasteHub/Images.xcassets/AppIcon.appiconset/` | PNG    | 1024×1024 px | iOS App Store icon                           |
+| `AppIcon-60@2x.png`          | Sama                                                           | PNG    | 120×120 px   | iPhone home screen                           |
+| `AppIcon-60@3x.png`          | Sama                                                           | PNG    | 180×180 px   | iPhone home screen @3x                       |
+| `AppIcon-76.png`             | Sama                                                           | PNG    | 76×76 px     | iPad home screen                             |
+| `AppIcon-76@2x.png`          | Sama                                                           | PNG    | 152×152 px   | iPad home screen @2x                         |
+| `AppIcon-83.5@2x.png`        | Sama                                                           | PNG    | 167×167 px   | iPad Pro                                     |
+
+### 3.6 Website & Landing Page
+
+| File                   | Path Target                                   | Format | Ukuran              | Keterangan                                                                  |
+| ---------------------- | --------------------------------------------- | ------ | ------------------- | --------------------------------------------------------------------------- |
+| `favicon.ico`          | `website/favicon.ico` + `landing/favicon.ico` | ICO    | 16×16, 32×32, 48×48 | Browser tab icon                                                            |
+| `favicon.svg`          | `website/favicon.svg`                         | SVG    | Scalable            | Modern favicon (untuk `<link rel="icon" type="image/svg+xml">`)             |
+| `apple-touch-icon.png` | `website/apple-touch-icon.png`                | PNG    | 180×180 px          | iOS home screen bookmark                                                    |
+| `og-image.png`         | `website/og-image.png`                        | PNG    | 1200×630 px         | Open Graph / social media preview. **Harus ada logo + tagline + branding.** |
+| `twitter-card.png`     | `website/twitter-card.png`                    | PNG    | 1200×628 px         | Twitter/X card image (bisa sama dengan OG)                                  |
+| `logo-nav.svg`         | `website/logo-nav.svg`                        | SVG    | ~32px height        | Logo kecil di navbar website                                                |
+| `logo-nav.png`         | `website/logo-nav.png`                        | PNG    | 64×64 px            | Fallback navbar logo                                                        |
+
+### 3.7 GitHub & Social
+
+| File                        | Path Target                             | Format | Ukuran      | Keterangan                       |
+| --------------------------- | --------------------------------------- | ------ | ----------- | -------------------------------- |
+| `github-social-preview.png` | (upload manual di GitHub repo settings) | PNG    | 1280×640 px | GitHub repository social preview |
+| `readme-banner.png`         | `docs/assets/readme-banner.png`         | PNG    | 1280×320 px | Banner header untuk README.md    |
+| `readme-logo.png`           | `docs/assets/readme-logo.png`           | PNG    | 256×256 px  | Logo di README.md                |
+
+### 3.8 Notification / Toast Icon
+
+| File                    | Path Target                    | Format | Ukuran   | Keterangan                      |
+| ----------------------- | ------------------------------ | ------ | -------- | ------------------------------- |
+| `notification-icon.png` | `assets/notification-icon.png` | PNG    | 64×64 px | Windows toast notification icon |
+
+---
+
+## 4. Ukuran Ringkasan (Cheat Sheet)
+
+| Ukuran (px)   | Kegunaan                                    |
+| ------------- | ------------------------------------------- |
+| **16×16**     | Tray icon, favicon, extension toolbar       |
+| **24×24**     | ICO sub-size                                |
+| **32×32**     | Favicon, sidebar logo (rendered), extension |
+| **48×48**     | Extension management, favicon ICO           |
+| **64×64**     | ICO sub-size, notification icon             |
+| **128×128**   | In-app logo, extension store                |
+| **256×256**   | ICO sub-size, README logo                   |
+| **512×512**   | macOS ICNS                                  |
+| **1024×1024** | Master PNG, macOS ICNS, iOS App Store       |
+| **2048×2048** | Hi-res master raster                        |
+| **1200×630**  | OG image / social share                     |
+| **1280×640**  | GitHub social preview                       |
+| **1280×320**  | README banner                               |
+
+---
+
+## 5. Spesifikasi Teknis per Konteks
+
+### 5.1 System Tray Icon (`assets/tray/icon.png`)
+
+```
+Ukuran   : 16×16 px (wajib), sediakan juga 32×32 untuk HiDPI
+Format   : PNG, transparent background
+Warna    : Pertimbangkan versi MONOCHROME (putih atau hitam)
+           karena tray icon tampil di atas taskbar yang bisa terang/gelap
+Catatan  : Di ukuran 16px, detail logo penuh tidak akan terlihat.
+           Buat versi simplified — hanya checkmark + sparkle, atau
+           hanya inisial "S" bergaya.
+```
+
+### 5.2 Sidebar Logo (`src/renderer/assets/app-logo.png`)
+
+```
+Render   : 32×32 CSS px (lihat .logoIcon di AppSidebar.module.css)
+File     : 128×128 px atau 256×256 px (untuk retina/HiDPI)
+Format   : PNG, transparent background
+Border   : Ditampilkan dengan border-radius: var(--radius-md) dan
+           border 1px solid var(--border-subtle)
+Efek     : Glow shadow (--accent-glow), hover scale 1.06
+Catatan  : Logo harus terlihat bagus di ukuran kecil dengan rounded corners.
+```
+
+### 5.3 Windows ICO (`assets/icons/icon.ico`)
+
+```
+Format     : ICO (multi-resolution embedded)
+Sizes      : 16, 24, 32, 48, 64, 128, 256 px
+Color depth: 32-bit (RGBA, with alpha transparency)
+Tool       : Gunakan `png2ico`, `ImageMagick`, atau online converter
+Catatan    : Jangan gunakan PNG tunggal yang di-rename ke .ico!
+             Harus benar-benar multi-resolution ICO container.
+```
+
+### 5.4 macOS ICNS (`assets/icons/icon.icns`)
+
+```
+Format  : ICNS (Apple Icon Image)
+Sizes   : 16, 32, 64, 128, 256, 512, 1024 px (include @2x variants)
+Tool    : `iconutil` (macOS), atau `png2icns`
+Catatan : Perlu 10 PNG files untuk generate:
+          icon_16x16.png, icon_16x16@2x.png,
+          icon_32x32.png, icon_32x32@2x.png,
+          icon_128x128.png, icon_128x128@2x.png,
+          icon_256x256.png, icon_256x256@2x.png,
+          icon_512x512.png, icon_512x512@2x.png
+```
+
+### 5.5 OG Image (`website/og-image.png`)
+
+```
+Ukuran    : 1200×630 px
+Format    : PNG atau JPG (< 5MB)
+Konten    : Logo + "SmartPasteHub" text + tagline
+Background: Solid atau subtle gradient matching brand colors
+Catatan   : Text harus bisa dibaca di thumbnail kecil (~600×315)
+            Hindari detail kecil di pinggir (safe zone 100px margin)
+```
+
+---
+
+## 6. AI Image Generation Prompts
+
+Prompt-prompt berikut bisa digunakan di **Midjourney**, **DALL-E 3**, **Stable Diffusion**, atau **Ideogram** untuk generate logo baru.
+
+### 6.1 Prompt: Logo Utama (App Icon)
+
+**Style: Flat Minimalist**
+
+```
+A modern flat minimalist app icon for a clipboard manager app called "SmartPasteHub".
+The icon features a stylized document/clipboard with a checkmark and small sparkle accents,
+representing smart paste and text cleaning.
+Colors: dark charcoal gray (#3C3C3C) document, teal/emerald green (#10B981) checkmark and sparkles,
+white background.
+Clean vector aesthetic, sharp geometric lines, no gradients, no shadows, no text.
+Square 1:1 ratio, suitable for app icon at any size from 16px to 1024px.
+Professional, productivity-focused, tech-forward design.
+```
+
+**Style: Glassmorphism Modern**
+
+```
+A modern glassmorphism-style app icon for "SmartPasteHub", a smart clipboard manager.
+Frosted glass clipboard/document shape with a glowing teal checkmark overlay.
+Subtle depth with soft shadows and light refraction effects.
+Color palette: deep navy/slate background, teal (#0D9488) accent glow, white highlights.
+Clean, futuristic, macOS Big Sur icon style.
+1:1 square ratio, 1024x1024px.
+```
+
+**Style: Geometric Abstract**
+
+```
+Abstract geometric app icon representing smart paste/clipboard automation.
+Overlapping geometric shapes forming a stylized clipboard or document silhouette.
+Accent shape suggesting a checkmark or transformation arrow.
+Color: emerald green (#10B981) primary, charcoal (#2D2D2D) secondary.
+Flat design, no gradients, ultra-clean lines.
+Suitable as software icon, 1:1 ratio.
+```
+
+### 6.2 Prompt: System Tray Icon (Simplified)
+
+```
+A ultra-simplified monochrome icon for system tray, 16x16 pixels concept.
+Single-stroke checkmark with a tiny sparkle dot.
+OR: letter "S" in a minimal square outline.
+Pure white on transparent background.
+Pixel-perfect, no anti-aliasing artifacts at 16px.
+Minimalist, recognizable at tiny sizes.
+```
+
+### 6.3 Prompt: OG Image / Social Preview
+
+```
+A professional social media preview banner for "SmartPasteHub" app.
+Left side: the app icon (clipboard with checkmark and sparkles).
+Right side: "SmartPasteHub" in bold modern sans-serif font,
+subtitle "Intelligent Clipboard Assistant" below in lighter weight.
+Background: subtle dark gradient from charcoal (#1a1a2e) to dark teal (#0a192f).
+Accent glow effects in teal/emerald.
+Clean, professional, developer-tool aesthetic.
+Dimensions: 1200x630px landscape.
+```
+
+### 6.4 Prompt: GitHub README Banner
+
+```
+A wide banner for a GitHub README, for "SmartPasteHub" project.
+Center-aligned: app icon + "SmartPasteHub" wordmark.
+Below: tagline "Smart clipboard manager with AI-powered formatting".
+Background: very dark, subtle gradient or pattern.
+Teal/emerald accent highlights.
+Aspect ratio ~4:1 (1280x320px).
+Modern open-source project style, similar to popular GitHub repos.
+```
+
+### 6.5 Prompt: Adaptive Android Icon Foreground
+
+```
+An adaptive icon foreground layer for Android.
+The SmartPasteHub logo (clipboard + checkmark + sparkles) centered
+in a 432x432px canvas with generous safe padding (66px each side).
+Transparent background. Logo occupies center 300x300px area.
+Flat vector style, no shadows.
+```
+
+---
+
+## 7. Design Guidelines & Constraints
+
+### 7.1 Safe Zones
+
+```
+┌──────────────────────────────┐
+│         SAFE ZONE            │
+│   ┌──────────────────────┐   │
+│   │                      │   │
+│   │     LOGO AREA        │   │
+│   │     (content)        │   │
+│   │                      │   │
+│   └──────────────────────┘   │
+│         SAFE ZONE            │
+└──────────────────────────────┘
+
+App Icon       : 10-15% padding dari edge
+Android Adaptive: 18% padding dari edge (wajib per Google spec)
+OG Image       : 100px margin setiap sisi
+Tray Icon      : 1-2px padding (16px canvas sangat kecil)
+```
+
+### 7.2 Format Requirements
+
+| Context                | Transparency             | Background                              |
+| ---------------------- | ------------------------ | --------------------------------------- |
+| App icon (Windows ICO) | ✅ Ya                    | Transparent                             |
+| App icon (macOS ICNS)  | ✅ Ya                    | Transparent                             |
+| Tray icon              | ✅ Ya (WAJIB)            | Transparent                             |
+| In-app logo            | ✅ Ya                    | Transparent                             |
+| Extension icons        | ✅ Ya                    | Transparent                             |
+| OG Image               | ❌ Tidak                 | Solid/gradient background               |
+| GitHub preview         | ❌ Tidak                 | Solid/gradient background               |
+| Favicon ICO            | ✅ Ya                    | Transparent                             |
+| Android adaptive       | ✅ Ya (foreground layer) | Warna solid (background layer terpisah) |
+| iOS App Store          | ❌ Tidak                 | Harus solid (no transparency per Apple) |
+
+### 7.3 Dark/Light Mode Compatibility
+
+Logo harus terlihat baik di:
+
+- **Light mode**: background `#FFFFFF` — `#F5F5F5`
+- **Dark mode**: background `#1A1A2E` — `#0F0F0F`
+- **System tray**: Windows taskbar bisa terang atau gelap
+
+**Rekomendasi**: Sediakan 2 varian tray icon:
+
+- `tray-icon-light.png` — untuk taskbar gelap (icon putih/terang)
+- `tray-icon-dark.png` — untuk taskbar terang (icon gelap)
+
+---
+
+## 8. File Tree Target (Setelah Semua Aset Dibuat)
+
+```
+smartpastehub/
+├── logo.png                          # 1024×1024 master (bundled in app)
+├── assets/
+│   ├── icons/
+│   │   ├── icon.ico                  # Windows multi-res ICO
+│   │   ├── icon.icns                 # macOS ICNS
+│   │   ├── icon-1024.png             # 1024×1024 master PNG
+│   │   ├── icon-512.png              # 512×512
+│   │   ├── icon-256.png              # 256×256
+│   │   ├── icon-128.png              # 128×128
+│   │   ├── icon-64.png               # 64×64
+│   │   ├── icon-48.png               # 48×48
+│   │   ├── icon-32.png               # 32×32
+│   │   ├── icon-16.png               # 16×16
+│   │   └── logo-master.svg           # Vector source
+│   ├── tray/
+│   │   ├── icon.png                  # 16×16 default tray
+│   │   ├── icon@2x.png              # 32×32 HiDPI tray
+│   │   ├── tray-light.png           # Untuk dark taskbar
+│   │   └── tray-dark.png            # Untuk light taskbar
+│   └── notification-icon.png        # 64×64
+├── build/
+│   ├── icon.ico                      # Builder fallback
+│   ├── installerHeader.bmp          # 150×57 NSIS header (opsional)
+│   └── installerSidebar.bmp         # 164×314 NSIS sidebar (opsional)
+├── src/renderer/assets/
+│   └── app-logo.png                  # 128×128 atau 256×256 in-app
+├── extension/
+│   └── icons/
+│       ├── icon-16.png
+│       ├── icon-32.png
+│       ├── icon-48.png
+│       └── icon-128.png
+├── website/
+│   ├── favicon.ico                   # Multi-res favicon
+│   ├── favicon.svg                   # SVG favicon
+│   ├── apple-touch-icon.png         # 180×180
+│   ├── og-image.png                  # 1200×630
+│   └── logo-nav.svg                  # Navbar logo
+├── landing/
+│   ├── favicon.ico
+│   └── favicon.svg
+├── mobile/ (planned)
+│   ├── android/
+│   │   └── app/src/main/res/
+│   │       ├── mipmap-mdpi/ic_launcher.png      # 48×48
+│   │       ├── mipmap-hdpi/ic_launcher.png      # 72×72
+│   │       ├── mipmap-xhdpi/ic_launcher.png     # 96×96
+│   │       ├── mipmap-xxhdpi/ic_launcher.png    # 144×144
+│   │       └── mipmap-xxxhdpi/ic_launcher.png   # 192×192
+│   └── ios/
+│       └── Images.xcassets/AppIcon.appiconset/
+│           └── (lihat section 3.5)
+└── docs/assets/
+    ├── readme-banner.png             # 1280×320
+    ├── readme-logo.png               # 256×256
+    └── github-social-preview.png     # 1280×640
+```
+
+---
+
+## 9. Tool & Workflow Rekomendasi
+
+### Membuat Logo
+
+1. **Design di Figma/Illustrator** — export SVG sebagai master
+2. Generate PNG dari SVG di semua ukuran yang diperlukan
+3. Atau gunakan AI (DALL-E 3, Midjourney) dengan prompt di section 6
+
+### Generate Multi-Resolution dari Master PNG
+
+**ImageMagick (CLI):**
+
+```bash
+# Generate semua ukuran dari master 1024px
+for size in 16 24 32 48 64 128 256 512 1024; do
+  magick logo-master.png -resize ${size}x${size} icon-${size}.png
+done
+
+# Generate Windows ICO (multi-res)
+magick icon-16.png icon-24.png icon-32.png icon-48.png icon-64.png icon-128.png icon-256.png icon.ico
+
+# Generate macOS ICNS (requires iconutil on macOS)
+mkdir icon.iconset
+cp icon-16.png icon.iconset/icon_16x16.png
+cp icon-32.png icon.iconset/icon_16x16@2x.png
+cp icon-32.png icon.iconset/icon_32x32.png
+cp icon-64.png icon.iconset/icon_32x32@2x.png
+cp icon-128.png icon.iconset/icon_128x128.png
+cp icon-256.png icon.iconset/icon_128x128@2x.png
+cp icon-256.png icon.iconset/icon_256x256.png
+cp icon-512.png icon.iconset/icon_256x256@2x.png
+cp icon-512.png icon.iconset/icon_512x512.png
+cp icon-1024.png icon.iconset/icon_512x512@2x.png
+iconutil -c icns icon.iconset
+```
+
+**sharp (Node.js):**
+
+```js
+const sharp = require("sharp");
+const sizes = [16, 24, 32, 48, 64, 128, 256, 512, 1024];
+
+for (const size of sizes) {
+  await sharp("logo-master.png")
+    .resize(size, size)
+    .png()
+    .toFile(`icon-${size}.png`);
+}
+```
+
+### Online Tools
+
+- **ICO converter**: [icoconvert.com](https://icoconvert.com/) — multi-size ICO dari PNG
+- **ICNS generator**: [cloudconvert.com](https://cloudconvert.com/png-to-icns)
+- **Favicon generator**: [realfavicongenerator.net](https://realfavicongenerator.net/) — generate semua favicon variants
+
+---
+
+## 10. Checklist Sebelum Deploy
+
+- [ ] Master SVG tersedia dan bersih (no embedded raster)
+- [ ] Semua ukuran PNG di-generate dari master (bukan upscale!)
+- [ ] ICO berisi minimal 5 resolusi (16, 32, 48, 128, 256)
+- [ ] Tray icon terlihat jelas di 16×16 (test di taskbar asli)
+- [ ] Logo terlihat bagus di dark mode DAN light mode
+- [ ] OG image memiliki text yang terbaca di thumbnail
+- [ ] Favicon terpasang di website & landing page HTML
+- [ ] Extension manifest.json diupdate dengan icon paths
+- [ ] `electron-builder.yml` mengarah ke file icon yang benar
+- [ ] Tidak ada file lama/orphan yang tertinggal
+- [ ] Test build: `npm run build && npm run package:win` sukses
+
+---
+
+## 11. Referensi Konfigurasi
+
+### electron-builder.yml (current paths)
+
+```yaml
+win:
+  icon: assets/icons/icon.ico
+nsis:
+  installerIcon: assets/icons/icon.ico
+  uninstallerIcon: assets/icons/icon.ico
+mac:
+  icon: assets/icons/icon.icns
+linux:
+  icon: assets/icons # folder berisi PNG set
+extraResources:
+  - from: assets/icons/icon.ico
+    to: icon.ico
+```
+
+### HTML Meta Tags (tambahkan di website & landing)
+
+```html
+<link rel="icon" href="/favicon.ico" sizes="any" />
+<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+<meta property="og:image" content="/og-image.png" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:image" content="/twitter-card.png" />
+```

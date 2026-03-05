@@ -13,6 +13,10 @@ export const DEFAULT_SETTINGS = {
   hotkeys: {
     pasteClean: "Alt+Shift+V",
     ocrCapture: "Ctrl+Alt+S",
+    screenshotCapture: "Shift+PrintScreen",
+    presetSwitch: "Ctrl+Alt+P",
+    ghostWrite: "Ctrl+Alt+G",
+    translateClipboard: "Ctrl+Alt+T",
     multiCopy: "CmdOrCtrl+Alt+C",
     queueToggle: "CmdOrCtrl+Alt+Q",
     historyOpen: "CmdOrCtrl+Alt+H",
@@ -27,7 +31,7 @@ export const DEFAULT_SETTINGS = {
     detectSensitive: true,
     autoClear: false,
     clearTimerSeconds: 30,
-    maskMode: "partial",
+    maskMode: "smart",
     unknownContextAction: "warn",
   },
   history: {
@@ -40,7 +44,7 @@ export const DEFAULT_SETTINGS = {
     provider: "local",
     apiKey: "",
     baseUrl: "",
-    model: "gpt-3.5-turbo",
+    model: "",
     autoDetect: true,
     aiMode: "auto",
   },
@@ -76,11 +80,15 @@ export const DEFAULT_SETTINGS = {
     sensitiveTtlSeconds: 90,
     sensitiveAllowlistApps: [],
     enablePrivacyFirewall: true,
+    firewallRedactionMode: "display_only",
+    autoMutateOnPublicApps: false,
+    mutateClipboardApps: [],
     neverPersistSensitive: true,
   },
   diagnostics: {
-    observabilityEnabled: true,
+    observabilityEnabled: false, // default OFF — user must opt-in
     maxEvents: 500,
+    telemetryDeviceId: "",
   },
   recipes: [],
   autoLearnedRules: [],
@@ -93,4 +101,11 @@ export const RECOMMENDED_PASTE_HOTKEYS = [
   "CmdOrCtrl+Shift+Space",
   "CmdOrCtrl+Alt+F8",
   "CmdOrCtrl+Shift+F8",
+] as const;
+
+export const RECOMMENDED_SCREENSHOT_HOTKEYS = [
+  "Shift+PrintScreen",
+  "Ctrl+Shift+PrintScreen",
+  "CmdOrCtrl+Shift+S",
+  "CmdOrCtrl+Alt+Shift+S",
 ] as const;

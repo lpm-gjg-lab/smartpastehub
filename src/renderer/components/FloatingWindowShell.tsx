@@ -1,9 +1,10 @@
-import React, { ReactNode, useEffect, useRef } from "react";
+import React, { ReactNode, useEffect, useId, useRef } from "react";
 import styles from "../styles/components/FloatingWindowShell.module.css";
+import { Cross2Icon } from "@radix-ui/react-icons";
 
 interface Props {
   title: string;
-  icon?: string;
+  icon?: ReactNode;
   children: ReactNode;
   width?: number | string;
   height?: number | string;
@@ -18,6 +19,7 @@ export function FloatingWindowShell({
 }: Props) {
   const dialogRef = useRef<HTMLDivElement>(null);
   const closeBtnRef = useRef<HTMLButtonElement>(null);
+  const titleId = useId();
 
   useEffect(() => {
     closeBtnRef.current?.focus();
@@ -63,23 +65,24 @@ export function FloatingWindowShell({
       ref={dialogRef}
       role="dialog"
       aria-modal="true"
-      aria-labelledby="floating-window-title"
+      aria-labelledby={titleId}
       onKeyDown={handleKeyDown}
       className={styles.root}
       style={{ width, height }}
     >
       <div className={styles.header}>
-        <span id="floating-window-title" className={styles.title}>
-          {icon && `${icon} `}
+        <span id={titleId} className={styles.title}>
+          {icon && <span aria-hidden="true">{icon} </span>}
           {title}
         </span>
         <button
+          type="button"
           ref={closeBtnRef}
           onClick={() => window.close()}
           aria-label="Close window"
           className={styles.closeBtn}
         >
-          ✕
+          <Cross2Icon />
         </button>
       </div>
 

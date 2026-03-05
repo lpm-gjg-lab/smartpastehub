@@ -50,7 +50,7 @@ describe("paste intelligence strategy", () => {
       baselineIntent: "plain_text",
       autoLearnedRules: [
         {
-          id: "format-notion_exe-md_text",
+          id: "format-notion-md_text",
           appName: "notion.exe",
           contentType: "md_text",
           suggestedPreset: "format:rich",
@@ -148,14 +148,14 @@ describe("paste intelligence learning feedback", () => {
     }
 
     expect(rules.length).toBe(1);
-    expect(firstRule.id).toContain("format-notion_exe-md_text");
+    expect(firstRule.id).toContain("format-notion-md_text");
     expect(firstRule.suggestedPreset).toBe("format:rich");
   });
 
   it("updates existing format learning rule when intent changes", () => {
     const existing = [
       {
-        id: "format-notion_exe-md_text",
+        id: "format-notion-md_text",
         appName: "notion.exe",
         contentType: "md_text" as const,
         suggestedPreset: "format:rich",
@@ -194,5 +194,83 @@ describe("paste intelligence learning feedback", () => {
 
     expect(firstRule.count).toBeGreaterThanOrEqual(4);
     expect(firstRule.suggestedPreset).toBe("format:rich");
+  });
+
+  it("weights recent learned feedback higher than stale rules", () => {
+    const oldDate = new Date(
+      Date.now() - 1000 * 60 * 60 * 24 * 120,
+    ).toISOString();
+    const freshDate = new Date().toISOString();
+    const decision = planPasteStrategy({
+      detectedType: "plain_text",
+      cleanedText: "Quick status update",
+      sourceHtml: "",
+      sourceAppName: "custom-tool.exe",
+      targetAppType: "unknown",
+      targetAppName: "custom-tool.exe",
+      fieldIntent: "general",
+      aiRewritten: false,
+      baselineIntent: "plain_text",
+      autoLearnedRules: [
+        {
+          id: "format-custom_tool-plain_text-old",
+          appName: "custom-tool.exe",
+          contentType: "plain_text",
+          suggestedPreset: "format:rich",
+          confidence: 0.95,
+          count: 20,
+          updatedAt: oldDate,
+        },
+        {
+          id: "format-custom_tool-plain_text-new",
+          appName: "custom-tool",
+          contentType: "plain_text",
+          suggestedPreset: "format:plain",
+          confidence: 0.8,
+          count: 3,
+          updatedAt: freshDate,
+        },
+      ],
+    });
+
+    expect(decision.intent).toBe("plain_text");
+  });
+
+  it("learns separate rules per field bucket for same app+content", () => {
+    let rules = learnPasteStrategyFeedback([], {
+      appName: "notion.exe",
+      contentType: "md_text",
+      fieldIntent: "editor_body",
+      selectedIntent: "rich_text",
+      confidence: 0.9,
+    });
+
+    rules = learnPasteStrategyFeedback(rules, {
+      appName: "notion.exe",
+      contentType: "md_text",
+      fieldIntent: "search_box",
+      selectedIntent: "plain_text",
+      confidence: 0.85,
+    });
+
+    expect(rules.length).toBe(2);
+    expect(rules.some((rule) => rule.fieldIntent === "rich")).toBe(true);
+    expect(rules.some((rule) => rule.fieldIntent === "compact")).toBe(true);
+    expect(rules.some((rule) => rule.id.endsWith("--rich"))).toBe(true);
+    expect(rules.some((rule) => rule.id.endsWith("--compact"))).toBe(true);
+  });
+
+  it("keeps legacy general rule key when no field intent is provided", () => {
+    const rules = learnPasteStrategyFeedback([], {
+      appName: "custom-tool.exe",
+      contentType: "md_text",
+      selectedIntent: "plain_text",
+      confidence: 0.9,
+    });
+
+    expect(rules).toHaveLength(1);
+    expect(rules[0]?.fieldIntent).toBeUndefined();
+    expect(rules[0]?.id).toContain("format-custom_tool-md_text");
+    expect(rules[0]?.id.includes("--")).toBe(false);
   });
 });

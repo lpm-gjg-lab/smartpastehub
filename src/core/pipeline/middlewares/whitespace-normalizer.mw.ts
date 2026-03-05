@@ -4,11 +4,11 @@ import { PipelineMiddleware } from "../types";
 const transformedTypes = new Set([
   "styled_html",
   "structured_html",
-  "pdf_text",
   "html_table",
   "csv_table",
   "tsv_table",
   "md_text",
+  "pdf_text",
   // Passthrough types — must not be touched by whitespace normalization
   "source_code",
   "json_data",

@@ -6,10 +6,22 @@ directories:
   output: release
   buildResources: assets
 
+# Local/dev packaging stays unsigned by default.
+# Signed release workflow overrides this with `-c.forceCodeSigning=true`.
+forceCodeSigning: false
+
 files:
   - dist/**/*
   - package.json
   - logo.png
+
+extraResources:
+  - from: assets/icons/icon.ico
+    to: icon.ico
+  - from: eng.traineddata
+    to: tessdata/eng.traineddata
+  - from: ind.traineddata
+    to: tessdata/ind.traineddata
 
 win:
   signAndEditExecutable: false
@@ -19,7 +31,6 @@ win:
     - target: portable
       arch: [x64]
   icon: assets/icons/icon.ico
-  forceCodeSigning: false
 
 nsis:
   artifactName: SmartPasteHub-${version}-${arch}-setup.${ext}
@@ -54,9 +65,10 @@ linux:
     entry: "StartupWMClass=SmartPasteHub"
 
 publish:
-  provider: github
-  owner: smartpastehub
-  repo: smartpastehub
-
+  - provider: github
+    owner: smartpastehub
+    repo: smartpastehub
+  - provider: generic
+    url: "https://example.com/updates" # Placeholder for auto-updater server
 # autoUpdate is handled at runtime via electron-updater, not electron-builder config
 # See src/main/index.ts for updater initialization

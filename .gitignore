@@ -8,3 +8,26 @@ extension/dist/
 mobile/dist/
 relay-server/dist/
 out/
+
+# OCR language model data files (downloaded at runtime, not source-controlled)
+*.traineddata
+
+# Debug / scratch scripts at project root (use tests/ directory instead)
+/scan-registry*.ts
+/test-*.ts
+/test-*.js
+/scan-output*.txt
+/reg-output.txt
+/test-output.json
+/nul
+
+# AI-generated resolved artifact files
+*.resolved
+*.md.resolved
+
+# Temporary dev log files
+smartpaste-devdesktop.*.log
+
+# Old resolved planning documents
+/implementation_plan_*.md
+/task_last.md

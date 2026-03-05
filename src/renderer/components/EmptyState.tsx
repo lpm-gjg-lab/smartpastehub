@@ -7,7 +7,7 @@ interface EmptyStateAction {
 }
 
 interface EmptyStateProps {
-  icon: string;
+  icon: React.ReactNode;
   title: string;
   subtitle?: string;
   action?: EmptyStateAction;
@@ -22,7 +22,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
   return (
     <div className={styles.emptyState}>
       <div className={styles.iconWrap}>
-        <span className={styles.icon}>{icon}</span>
+        <div className={styles.icon}>{icon}</div>
       </div>
       <p className={styles.title}>{title}</p>
       {subtitle && <p className={styles.subtitle}>{subtitle}</p>}

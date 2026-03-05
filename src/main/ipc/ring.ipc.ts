@@ -59,7 +59,7 @@ export function registerRingIpc(
   });
 
   safeHandle("ring:select", async (_, payload) => {
-    const id = Number(payload ?? 0);
+    const id = Number(typeof payload === 'object' && payload !== null ? (payload as Record<string, unknown>).id : payload) || 0;
     if (!Number.isFinite(id) || id <= 0) {
       return false;
     }

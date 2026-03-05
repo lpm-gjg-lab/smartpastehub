@@ -36,7 +36,7 @@ describe("AI IPC registration", () => {
       },
     } as never);
 
-    vi.mocked(rewriteText).mockResolvedValue("rewritten");
+    vi.mocked(rewriteText).mockResolvedValue({ text: "rewritten", usage: { promptTokens: 10, completionTokens: 5, totalTokens: 15 } });
 
     const rewriteHandler = handlers.get("ai:rewrite");
     if (!rewriteHandler) {
@@ -60,6 +60,7 @@ describe("AI IPC registration", () => {
       rewritten: "rewritten",
       mode: "rephrase",
       changed: true,
+      usage: { promptTokens: 10, completionTokens: 5, totalTokens: 15 },
     });
   });
 
@@ -95,5 +96,51 @@ describe("AI IPC registration", () => {
       ok: false,
       message: "Provider is set to local (no AI)",
     });
+  });
+
+  it("ai:detect-tone returns unavailable when provider is local", async () => {
+    const handlers = new Map<
+      string,
+      (event: unknown, payload: unknown) => Promise<unknown> | unknown
+    >();
+    registerAiIpc((channel, handler) => {
+      handlers.set(
+        channel,
+        handler as (event: unknown, payload: unknown) => Promise<unknown>,
+      );
+    });
+    vi.mocked(getSettings).mockResolvedValue({
+      general: { language: "en" },
+      ai: { provider: "local", apiKey: "", baseUrl: "", model: "" },
+    } as never);
+
+    const handler = handlers.get("ai:detect-tone");
+    if (!handler) throw new Error("ai:detect-tone not registered");
+
+    const result = await handler({}, { text: "Hello world!" });
+    expect(result).toMatchObject({ tone: "unavailable" });
+  });
+
+  it("ai:detect-tone returns unavailable when apiKey is empty", async () => {
+    const handlers = new Map<
+      string,
+      (event: unknown, payload: unknown) => Promise<unknown> | unknown
+    >();
+    registerAiIpc((channel, handler) => {
+      handlers.set(
+        channel,
+        handler as (event: unknown, payload: unknown) => Promise<unknown>,
+      );
+    });
+    vi.mocked(getSettings).mockResolvedValue({
+      general: { language: "en" },
+      ai: { provider: "openai", apiKey: "   ", baseUrl: "", model: "" },
+    } as never);
+
+    const handler = handlers.get("ai:detect-tone");
+    if (!handler) throw new Error("ai:detect-tone not registered");
+
+    const result = await handler({}, { text: "Hello world!" });
+    expect(result).toMatchObject({ tone: "unavailable" });
   });
 });

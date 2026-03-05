@@ -2,11 +2,11 @@ import React from "react";
 import styles from "../styles/components/Toast.module.css";
 import { useToastStore } from "../stores/useToastStore";
 import { Button } from "./Button";
-import { useI18n } from "../hooks/useI18n";
+import { useTranslation } from "react-i18next";
 
 export const ToastContainer: React.FC = () => {
   const { toasts, removeToast, pauseToast, resumeToast } = useToastStore();
-  const { t } = useI18n();
+  const { t } = useTranslation();
 
   const onToastKeyDown = (
     e: React.KeyboardEvent<HTMLDivElement>,

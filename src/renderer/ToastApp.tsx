@@ -29,6 +29,28 @@ export default function ToastApp() {
     startDismissTimers();
   });
 
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Auto-focus the toast container when data arrives so keyboard users can interact immediately
+  useEffect(() => {
+    if (!data) return;
+    containerRef.current?.focus();
+  }, [data]);
+
+  // Dismiss on Escape
+  useEffect(() => {
+    const onWindowKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      e.preventDefault();
+      setClosing(true);
+      scheduleClose(0);
+    };
+    window.addEventListener("keydown", onWindowKeyDown);
+    return () => {
+      window.removeEventListener("keydown", onWindowKeyDown);
+    };
+  }, [scheduleClose, setClosing]);
+
   if (!data) return null;
 
   const handleAction = (action: string) => {
@@ -43,46 +65,21 @@ export default function ToastApp() {
     );
   };
 
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  // Auto-focus the toast container when data arrives so keyboard users can interact immediately
-  useEffect(() => {
-    if (data) {
-      containerRef.current?.focus();
-    }
-  }, [data]);
-
-  // Dismiss on Escape
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent<HTMLDivElement>) => {
-      if (e.key === "Escape") {
-        e.preventDefault();
-        setClosing(true);
-        scheduleClose(0);
-      }
-    },
-    [setClosing, scheduleClose],
-  );
-
   return (
     <div
       ref={containerRef}
       className={styles.toastContainer}
-      role="alert"
+      role="alertdialog"
+      aria-modal="true"
       aria-live="assertive"
       aria-atomic="true"
-      tabIndex={0}
-      onKeyDown={handleKeyDown}
-      style={{ outline: "none" }}
     >
       <div className={`${styles.toastBox} ${closing ? styles.closing : ""}`}>
         <ToastHeader data={data} />
         <div className={styles.content}>
-          {data.securityAlert
-            ? "⚠️ Sensitive data masked"
-            : data.type === "bypass_mode" || data.type === "system"
-              ? data.cleaned
-              : data.cleaned}
+          {data.type === "sensitive_warning" && data.sensitiveTypes
+            ? `Found: ${data.sensitiveTypes.join(", ")}. Choose an action below.`
+            : data.cleaned}
         </div>
         {data.previewOriginal || data.previewCleaned ? (
           <div className={styles.previewDiff}>

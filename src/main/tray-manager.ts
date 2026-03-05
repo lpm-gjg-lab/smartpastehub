@@ -1,6 +1,7 @@
 import { Menu, Tray, nativeImage, clipboard, app } from "electron";
 import fs from "fs";
 import path from "path";
+import { resolveTrayIconPath } from "./utils/icon-resolver";
 
 // Incognito state (no.18) — toggled by tray menu
 let incognitoActive = false;
@@ -49,11 +50,7 @@ export function updateTrayAutoCleanState(active: boolean) {
 function applyTrayIcon() {
   if (!trayInstance || trayInstance.isDestroyed()) return;
 
-  const iconCandidates = [
-    path.join(__dirname, "../../assets/tray/icon.png"),
-    path.join(process.cwd(), "logo.png"),
-  ];
-  const iconPath = iconCandidates.find((c) => fs.existsSync(c));
+  const iconPath = resolveTrayIconPath();
   if (!iconPath) return;
 
   if (autoCleanActive) {
@@ -67,7 +64,7 @@ function applyTrayIcon() {
     // The simplest approach: create a badge image and resize/composite via canvas-like API.
     // Electron nativeImage doesn't have composite — use a pre-made badge asset if present,
     // otherwise fall back to a tinted copy via resize.
-    const badgePath = path.join(__dirname, "../../assets/tray/icon-active.png");
+    const badgePath = path.join(path.dirname(iconPath), "icon-active" + path.extname(iconPath));
     if (fs.existsSync(badgePath)) {
       trayInstance.setImage(nativeImage.createFromPath(badgePath));
     } else {
@@ -122,11 +119,11 @@ function rebuildMenu() {
     { type: "separator" },
     { label: "Quick Actions", enabled: false },
     {
-      label: "⌨️ Ghost Write Clipboard (Ctrl+Alt+G)",
+      label: "⌨️ Ghost Write Clipboard",
       click: () => onGhostWriteClipboard(),
     },
     {
-      label: "🌐 Translate Clipboard (Ctrl+Alt+T)",
+      label: "🌐 Translate Clipboard",
       click: () => onTranslateClipboard(),
     },
     { type: "separator" },
@@ -178,11 +175,7 @@ export function createTray(
   if (quickActions?.translateClipboard) {
     onTranslateClipboard = quickActions.translateClipboard;
   }
-  const iconCandidates = [
-    path.join(__dirname, "../../assets/tray/icon.png"),
-    path.join(process.cwd(), "logo.png"),
-  ];
-  const iconPath = iconCandidates.find((c) => fs.existsSync(c));
+  const iconPath = resolveTrayIconPath();
   const icon = iconPath
     ? nativeImage.createFromPath(iconPath)
     : nativeImage.createEmpty();

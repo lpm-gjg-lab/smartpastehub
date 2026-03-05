@@ -23,8 +23,7 @@ export function registerAllIpcHandlers(deps: IpcDependencies): void {
 
   registerSettingsIpc(safeHandle, {
     reloadHotkeys: deps.reloadHotkeys,
-    confirmPreview: deps.confirmPreview,
-    cancelPreview: deps.cancelPreview,
+    contextRulesRepo: deps.contextRulesRepo,
     getFallbackMethods: deps.getFallbackMethods,
     submitPasteFeedback: deps.submitPasteFeedback,
   });

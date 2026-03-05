@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { invokeIPC } from "../lib/ipc";
 import { FloatingWindowShell } from "../components/FloatingWindowShell";
 import { useToastStore } from "../stores/useToastStore";
@@ -14,11 +15,12 @@ interface OCRResult {
 type OCRLanguage = "eng" | "ind";
 
 const LANGUAGE_OPTIONS: Array<{ value: OCRLanguage; label: string }> = [
-  { value: "eng", label: "English" },
-  { value: "ind", label: "Indonesian" },
+  { value: "eng", label: "window.ocr.language_english" },
+  { value: "ind", label: "window.ocr.language_indonesian" },
 ];
 
 export default function OCRPopup() {
+  const { t } = useTranslation();
   const [imageData, setImageData] = useState<string>("");
   const [ocrResult, setOcrResult] = useState<OCRResult | null>(null);
   const [loading, setLoading] = useState(false);
@@ -39,7 +41,8 @@ export default function OCRPopup() {
     const dataUrl = await new Promise<string>((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = () => resolve(String(reader.result ?? ""));
-      reader.onerror = () => reject(new Error("Failed to read image"));
+      reader.onerror = () =>
+        reject(new Error(t("window.ocr.failed_read_image")));
       reader.readAsDataURL(file);
     });
     setImageData(dataUrl);
@@ -48,7 +51,7 @@ export default function OCRPopup() {
 
   const runOCR = async () => {
     if (!imageData) {
-      setError("Choose an image first.");
+      setError(t("window.ocr.choose_image_first"));
       return;
     }
     setLoading(true);
@@ -67,17 +70,23 @@ export default function OCRPopup() {
       // ── #7 Auto-copy hasil OCR ke clipboard (✔ auto)
       await invokeIPC("clipboard:write", { text: result.text });
       addToast({
-        title: "OCR Complete",
+        title: t("window.ocr.complete"),
         message: result.warning
-          ? `${Math.round(result.confidence * 100)}% confidence • ${result.warning}`
-          : `${Math.round(result.confidence * 100)}% confidence`,
+          ? t("window.ocr.confidence_warning", {
+              confidence: Math.round(result.confidence * 100),
+              warning: result.warning,
+            })
+          : t("window.ocr.confidence_only", {
+              confidence: Math.round(result.confidence * 100),
+            }),
         type: "success",
       });
     } catch (e) {
-      const message = e instanceof Error ? e.message : "OCR failed.";
+      const message =
+        e instanceof Error ? e.message : t("window.ocr.failed_generic");
       setError(message);
       addToast({
-        title: "OCR Failed",
+        title: t("window.ocr.failed_title"),
         message,
         type: "error",
       });
@@ -92,8 +101,8 @@ export default function OCRPopup() {
     }
     await invokeIPC("clipboard:write", { text: ocrResult.text });
     addToast({
-      title: "Copied",
-      message: "OCR text copied to clipboard",
+      title: t("window.ocr.copied_title"),
+      message: t("window.ocr.copied_message"),
       type: "info",
     });
   };
@@ -110,12 +119,12 @@ export default function OCRPopup() {
 
   return (
     <FloatingWindowShell
-      title="OCR Capture"
+      title={t("window.ocr.capture_title")}
       icon="🧾"
       width="100%"
       height="100%"
     >
-      <label className={styles.label}>Select image for OCR</label>
+      <label className={styles.label}>{t("window.ocr.select_image")}</label>
       <input
         className={styles.fileInput}
         type="file"
@@ -124,11 +133,15 @@ export default function OCRPopup() {
       />
 
       {imageData && (
-        <img src={imageData} alt="OCR source" className={styles.image} />
+        <img
+          src={imageData}
+          alt={t("window.ocr.source_alt")}
+          className={styles.image}
+        />
       )}
 
       <div className={styles.section}>
-        <div className={styles.label}>Languages</div>
+        <div className={styles.label}>{t("window.ocr.languages")}</div>
         <div className={styles.chips}>
           {LANGUAGE_OPTIONS.map((lang) => {
             const active = selectedLanguages.includes(lang.value);
@@ -138,7 +151,7 @@ export default function OCRPopup() {
                 onClick={() => toggleLanguage(lang.value)}
                 className={`${styles.chip} ${active ? styles.chipActive : ""}`}
               >
-                {lang.label}
+                {t(lang.label)}
               </button>
             );
           })}
@@ -146,7 +159,9 @@ export default function OCRPopup() {
       </div>
 
       <label className={styles.label}>
-        Confidence threshold: {Math.round(threshold * 100)}%
+        {t("window.ocr.confidence_threshold", {
+          confidence: Math.round(threshold * 100),
+        })}
       </label>
       <input
         type="range"
@@ -157,16 +172,16 @@ export default function OCRPopup() {
         onChange={(e) => setThreshold(Number(e.target.value))}
       />
 
-      <label className={styles.label}>Segmentation mode (PSM)</label>
+      <label className={styles.label}>{t("window.ocr.psm_label")}</label>
       <select
         value={psm}
         onChange={(e) => setPsm(Number(e.target.value))}
         className={styles.select}
       >
-        <option value={3}>3 - Auto</option>
-        <option value={6}>6 - Single block</option>
-        <option value={7}>7 - Single line</option>
-        <option value={8}>8 - Single word</option>
+        <option value={3}>{t("window.ocr.psm_auto")}</option>
+        <option value={6}>{t("window.ocr.psm_block")}</option>
+        <option value={7}>{t("window.ocr.psm_line")}</option>
+        <option value={8}>{t("window.ocr.psm_word")}</option>
       </select>
 
       <button
@@ -174,13 +189,17 @@ export default function OCRPopup() {
         disabled={loading || !imageData}
         className={styles.btn}
       >
-        {loading ? "Processing..." : ocrResult ? "Retry OCR" : "Run OCR"}
+        {loading
+          ? t("window.ocr.processing")
+          : ocrResult
+            ? t("window.ocr.retry")
+            : t("window.ocr.run")}
       </button>
 
       {error && <div className={styles.error}>{error}</div>}
 
       <div className={styles.section}>
-        <div className={styles.label}>Extracted text</div>
+        <div className={styles.label}>{t("window.ocr.extracted_text")}</div>
         <textarea
           value={ocrResult?.text ?? ""}
           onChange={(e) =>
@@ -189,20 +208,26 @@ export default function OCRPopup() {
               confidence: ocrResult?.confidence ?? 0,
             })
           }
-          placeholder="OCR result appears here"
+          placeholder={t("window.ocr.placeholder")}
           className={styles.textarea}
         />
         <div className={styles.meta}>
-          Confidence: {Math.round((ocrResult?.confidence ?? 0) * 100)}%
+          {t("window.ocr.confidence_label", {
+            confidence: Math.round((ocrResult?.confidence ?? 0) * 100),
+          })}
         </div>
         <div className={styles.meta}>
-          Words kept: {ocrResult?.blocks?.length ?? 0}
+          {t("window.ocr.words_kept", {
+            count: ocrResult?.blocks?.length ?? 0,
+          })}
           {lastTriedAt
-            ? ` • Last run ${new Date(lastTriedAt).toLocaleTimeString()}`
+            ? ` • ${t("window.ocr.last_run", {
+                time: new Date(lastTriedAt).toLocaleTimeString(),
+              })}`
             : ""}
         </div>
         <button onClick={copyResult} className={styles.btn}>
-          Copy Text
+          {t("window.ocr.copy_text")}
         </button>
       </div>
     </FloatingWindowShell>

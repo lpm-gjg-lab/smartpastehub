@@ -5,6 +5,7 @@ import { HistoryRepository } from "./repositories/history.repo";
 import { SnippetsRepository } from "./repositories/snippets.repo";
 import { TemplatesRepository } from "./repositories/templates.repo";
 import { UsageStatsRepository } from "./repositories/usage-stats.repo";
+import { ContextRulesRepository } from "./repositories/context-rules.repo";
 import { setHistoryRepo } from "./history-repo-ref";
 export function registerIpcHandlers(
   mainWindow: BrowserWindow,
@@ -15,8 +16,6 @@ export function registerIpcHandlers(
     width?: number,
     height?: number,
   ) => BrowserWindow,
-  confirmPreview: () => Promise<boolean>,
-  cancelPreview: () => void,
   getFallbackMethods: () => Array<{ app: string; method: string }>,
   submitPasteFeedback: (payload: {
     expectedIntent: "plain_text" | "rich_text";
@@ -33,6 +32,7 @@ export function registerIpcHandlers(
   const snippetsRepo = new SnippetsRepository(db);
   const templatesRepo = new TemplatesRepository(db);
   const usageStatsRepo = new UsageStatsRepository(db);
+  const contextRulesRepo = new ContextRulesRepository(db);
 
   // Wire historyRepo to main process so performClean() can auto-save history
   setHistoryRepo(historyRepo);
@@ -45,8 +45,7 @@ export function registerIpcHandlers(
     snippetsRepo,
     templatesRepo,
     usageStatsRepo,
-    confirmPreview,
-    cancelPreview,
+    contextRulesRepo,
     getFallbackMethods,
     submitPasteFeedback,
   });

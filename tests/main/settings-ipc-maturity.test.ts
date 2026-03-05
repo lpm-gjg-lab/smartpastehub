@@ -6,11 +6,19 @@ const mocks = vi.hoisted(() => ({
   updateSettingsMock: vi.fn(),
   contextMenuInstallMock: vi.fn(),
   contextMenuUninstallMock: vi.fn(),
+  contextRulesListMock: vi.fn(() => []),
+  contextRulesCreateMock: vi.fn(),
+  contextRulesUpdateMock: vi.fn(),
+  contextRulesDeleteMock: vi.fn(),
+  loggerErrorMock: vi.fn(),
+  telemetryTrackMock: vi.fn(),
+  pushObservabilityEventMock: vi.fn(),
 }));
 
 vi.mock("electron", () => ({
   app: {
     setLoginItemSettings: mocks.setLoginItemSettings,
+    isPackaged: true,
   },
 }));
 
@@ -45,6 +53,19 @@ vi.mock("../../src/main/settings-portability", () => ({
 
 vi.mock("../../src/main/observability", () => ({
   listObservabilityEvents: vi.fn(() => []),
+  pushObservabilityEvent: mocks.pushObservabilityEventMock,
+}));
+
+vi.mock("../../src/shared/logger", () => ({
+  logger: {
+    error: mocks.loggerErrorMock,
+  },
+}));
+
+vi.mock("../../src/main/telemetry", () => ({
+  telemetry: {
+    track: mocks.telemetryTrackMock,
+  },
 }));
 
 vi.mock("../../src/main/timeline-cluster", () => ({
@@ -61,6 +82,15 @@ function createRegistry() {
     handlers.set(channel, handler);
   };
   return { handlers, safeHandle };
+}
+
+function createContextRulesRepo() {
+  return {
+    list: mocks.contextRulesListMock,
+    create: mocks.contextRulesCreateMock,
+    update: mocks.contextRulesUpdateMock,
+    delete: mocks.contextRulesDeleteMock,
+  };
 }
 
 describe("settings IPC maturity", () => {
@@ -112,8 +142,7 @@ describe("settings IPC maturity", () => {
     const { handlers, safeHandle } = createRegistry();
     registerSettingsIpc(safeHandle as never, {
       reloadHotkeys: async () => undefined,
-      confirmPreview: async () => true,
-      cancelPreview: () => undefined,
+      contextRulesRepo: createContextRulesRepo() as never,
       getFallbackMethods: () => [],
       submitPasteFeedback: async () => ({
         appliedNow: false,
@@ -148,8 +177,7 @@ describe("settings IPC maturity", () => {
     const { handlers, safeHandle } = createRegistry();
     registerSettingsIpc(safeHandle as never, {
       reloadHotkeys: async () => undefined,
-      confirmPreview: async () => true,
-      cancelPreview: () => undefined,
+      contextRulesRepo: createContextRulesRepo() as never,
       getFallbackMethods: () => [],
       submitPasteFeedback: async () => ({
         appliedNow: false,
@@ -169,8 +197,7 @@ describe("settings IPC maturity", () => {
     const { handlers, safeHandle } = createRegistry();
     registerSettingsIpc(safeHandle as never, {
       reloadHotkeys: async () => undefined,
-      confirmPreview: async () => true,
-      cancelPreview: () => undefined,
+      contextRulesRepo: createContextRulesRepo() as never,
       getFallbackMethods: () => [],
       submitPasteFeedback: async () => ({
         appliedNow: false,
@@ -189,5 +216,74 @@ describe("settings IPC maturity", () => {
     );
 
     expect(mocks.contextMenuInstallMock).toHaveBeenCalledWith("submenu");
+  });
+
+  it("stores field-aware learning when paste feedback includes fieldIntent", async () => {
+    const { handlers, safeHandle } = createRegistry();
+    registerSettingsIpc(safeHandle as never, {
+      reloadHotkeys: async () => undefined,
+      contextRulesRepo: createContextRulesRepo() as never,
+      getFallbackMethods: () => [],
+      submitPasteFeedback: async () => ({
+        appliedNow: false,
+        expectedIntent: "plain_text",
+      }),
+    });
+
+    const response = (await handlers.get("automation:paste-feedback")?.(
+      {},
+      {
+        appName: "notion.exe",
+        contentType: "md_text",
+        fieldIntent: "search_box",
+        expectedIntent: "plain_text",
+        weight: 2,
+      },
+    )) as { rulesCount?: number };
+
+    const payload = mocks.updateSettingsMock.mock.calls.at(-1)?.[0] as {
+      autoLearnedRules?: Array<{ fieldIntent?: string }>;
+    };
+
+    expect(response.rulesCount).toBeGreaterThan(0);
+    expect(payload.autoLearnedRules?.[0]?.fieldIntent).toBe("compact");
+  });
+
+  it("captures renderer error via diagnostics channel", async () => {
+    const { handlers, safeHandle } = createRegistry();
+    registerSettingsIpc(safeHandle as never, {
+      reloadHotkeys: async () => undefined,
+      contextRulesRepo: createContextRulesRepo() as never,
+      getFallbackMethods: () => [],
+      submitPasteFeedback: async () => ({
+        appliedNow: false,
+        expectedIntent: "plain_text",
+      }),
+    });
+
+    const result = await handlers.get("diagnostics:renderer-error")?.(
+      {},
+      {
+        message: "Renderer failed",
+        source: "App.tsx",
+        line: 10,
+        column: 3,
+        kind: "error",
+      },
+    );
+
+    expect(result).toBe(true);
+    expect(mocks.loggerErrorMock).toHaveBeenCalledWith(
+      "Renderer error reported",
+      expect.objectContaining({ message: "Renderer failed" }),
+    );
+    expect(mocks.telemetryTrackMock).toHaveBeenCalledWith(
+      "app_error",
+      expect.objectContaining({
+        scope: "renderer",
+        message: "Renderer failed",
+      }),
+    );
+    expect(mocks.pushObservabilityEventMock).toHaveBeenCalled();
   });
 });

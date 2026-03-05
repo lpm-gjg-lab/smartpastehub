@@ -6,13 +6,14 @@ import fs from "fs";
 
 const execFileAsync = promisify(execFile);
 
+// HKEY_CURRENT_USER\Software\Classes
 const BG_PARENT_KEY = "HKCU\\Software\\Classes\\Directory\\Background\\shell";
 const FILE_PARENT_KEY = "HKCU\\Software\\Classes\\*\\shell";
 const FOLDER_PARENT_KEY = "HKCU\\Software\\Classes\\Directory\\shell";
 
 export type ContextMenuMode = "top_level" | "submenu";
 
-interface EntrySpec {
+export interface EntrySpec {
   parentKey: string;
   actionKey: string;
   commandKey: string;
@@ -21,130 +22,142 @@ interface EntrySpec {
   groupKey?: string;
 }
 
-interface ContextMenuConfig {
+export interface ContextMenuConfig {
   mode: ContextMenuMode;
-  background: EntrySpec;
-  file: EntrySpec;
-  folder: EntrySpec;
+  entries: EntrySpec[];
 }
 
 export interface ContextMenuStatus {
   supported: boolean;
   installed: boolean;
   mode?: ContextMenuMode;
-  backgroundEntry: boolean;
-  fileEntry: boolean;
-  folderEntry: boolean;
-  backgroundCommandMatch?: boolean;
-  fileCommandMatch?: boolean;
-  folderCommandMatch?: boolean;
-  actualBackgroundCommand?: string;
-  actualFileCommand?: string;
-  actualFolderCommand?: string;
-  expectedBackgroundCommand?: string;
-  expectedFileCommand?: string;
-  expectedFolderCommand?: string;
+  installedCount: number;
 }
 
-/**
- * Handles adding and removing SmartPasteHub from the Windows Context Menu via the Registry.
- * Note: Modifying HKCU (Current User) does not require admin privileges.
- */
 export class ContextMenuManager {
   private static get isWindows(): boolean {
     return process.platform === "win32";
   }
 
   private static get execPath(): string {
-    // When running in development, process.execPath is the path to electron.exe
-    // Adding the app dev path ensures it runs correctly during dev too.
     if (!app.isPackaged) {
       return `"${process.execPath}" "${app.getAppPath()}"`;
     }
     return `"${process.execPath}"`;
   }
 
-  private static get expectedBackgroundCommand(): string {
-    return `${this.execPath} --smart-paste-dir "%V"`;
-  }
-
-  private static get expectedFileCommand(): string {
-    return `${this.execPath} --smart-clean-file "%1"`;
-  }
-
-  private static get expectedFolderCommand(): string {
-    return `${this.execPath} --smart-paste-dir "%1"`;
-  }
-
   private static configFor(mode: ContextMenuMode): ContextMenuConfig {
+    const bgGroupKey = `${BG_PARENT_KEY}\\SmartPasteHub`;
+    const fileGroupKey = `${FILE_PARENT_KEY}\\SmartPasteHub`;
+    const folderGroupKey = `${FOLDER_PARENT_KEY}\\SmartPasteHub`;
+
+    const entries: EntrySpec[] = [];
+
     if (mode === "submenu") {
-      const bgGroupKey = `${BG_PARENT_KEY}\\SmartPasteHub`;
-      const fileGroupKey = `${FILE_PARENT_KEY}\\SmartPasteHub`;
-      const folderGroupKey = `${FOLDER_PARENT_KEY}\\SmartPasteHub`;
+      // 1. Directory Background Commands
+      entries.push({
+        parentKey: BG_PARENT_KEY,
+        groupKey: bgGroupKey,
+        actionKey: `${bgGroupKey}\\shell\\PasteNewFile`,
+        commandKey: `${bgGroupKey}\\shell\\PasteNewFile\\command`,
+        label: "Paste Cleaned as New File",
+        command: `${this.execPath} --smart-paste-dir "%V"`,
+      });
+      entries.push({
+        parentKey: BG_PARENT_KEY,
+        groupKey: bgGroupKey,
+        actionKey: `${bgGroupKey}\\shell\\PasteAIFixed`,
+        commandKey: `${bgGroupKey}\\shell\\PasteAIFixed\\command`,
+        label: "Paste AI-Fixed as New File",
+        command: `${this.execPath} --smart-paste-ai-fix "%V"`,
+      });
+      entries.push({
+        parentKey: BG_PARENT_KEY,
+        groupKey: bgGroupKey,
+        actionKey: `${bgGroupKey}\\shell\\PasteTranslated`,
+        commandKey: `${bgGroupKey}\\shell\\PasteTranslated\\command`,
+        label: "Paste Translated as New File",
+        command: `${this.execPath} --smart-paste-translate "%V"`,
+      });
 
-      const backgroundActionKey = `${bgGroupKey}\\shell\\PasteNewFile`;
-      const fileActionKey = `${fileGroupKey}\\shell\\CleanCopy`;
-      const folderActionKey = `${folderGroupKey}\\shell\\PasteIntoFolder`;
+      // 2. File Context Commands
+      entries.push({
+        parentKey: FILE_PARENT_KEY,
+        groupKey: fileGroupKey,
+        actionKey: `${fileGroupKey}\\shell\\CleanCopy`,
+        commandKey: `${fileGroupKey}\\shell\\CleanCopy\\command`,
+        label: "Clean & Copy File Content",
+        command: `${this.execPath} --smart-clean-file "%1"`,
+      });
+      entries.push({
+        parentKey: FILE_PARENT_KEY,
+        groupKey: fileGroupKey,
+        actionKey: `${fileGroupKey}\\shell\\SummarizeFile`,
+        commandKey: `${fileGroupKey}\\shell\\SummarizeFile\\command`,
+        label: "Summarize File to Clipboard",
+        command: `${this.execPath} --smart-summarize-file "%1"`,
+      });
+      entries.push({
+        parentKey: FILE_PARENT_KEY,
+        groupKey: fileGroupKey,
+        actionKey: `${fileGroupKey}\\shell\\TranslateFile`,
+        commandKey: `${fileGroupKey}\\shell\\TranslateFile\\command`,
+        label: "Translate File to Clipboard",
+        command: `${this.execPath} --smart-translate-file "%1"`,
+      });
 
-      return {
-        mode,
-        background: {
-          parentKey: BG_PARENT_KEY,
-          groupKey: bgGroupKey,
-          actionKey: backgroundActionKey,
-          commandKey: `${backgroundActionKey}\\command`,
-          label: "Paste as New File",
-          command: this.expectedBackgroundCommand,
-        },
-        file: {
-          parentKey: FILE_PARENT_KEY,
-          groupKey: fileGroupKey,
-          actionKey: fileActionKey,
-          commandKey: `${fileActionKey}\\command`,
-          label: "Clean and Copy",
-          command: this.expectedFileCommand,
-        },
-        folder: {
-          parentKey: FOLDER_PARENT_KEY,
-          groupKey: folderGroupKey,
-          actionKey: folderActionKey,
-          commandKey: `${folderActionKey}\\command`,
-          label: "Paste in This Folder",
-          command: this.expectedFolderCommand,
-        },
-      };
-    }
+      // 3. Folder Context Command
+      entries.push({
+        parentKey: FOLDER_PARENT_KEY,
+        groupKey: folderGroupKey,
+        actionKey: `${folderGroupKey}\\shell\\PasteIntoFolder`,
+        commandKey: `${folderGroupKey}\\shell\\PasteIntoFolder\\command`,
+        label: "Paste in This Folder",
+        command: `${this.execPath} --smart-paste-dir "%1"`,
+      });
 
-    return {
-      mode,
-      background: {
+    } else {
+      // Top Level mode
+      entries.push({
         parentKey: BG_PARENT_KEY,
         actionKey: `${BG_PARENT_KEY}\\SmartPasteHub.PasteNewFile`,
         commandKey: `${BG_PARENT_KEY}\\SmartPasteHub.PasteNewFile\\command`,
         label: "SmartPasteHub: Paste as New File",
-        command: this.expectedBackgroundCommand,
-      },
-      file: {
+        command: `${this.execPath} --smart-paste-dir "%V"`,
+      });
+      entries.push({
+        parentKey: BG_PARENT_KEY,
+        actionKey: `${BG_PARENT_KEY}\\SmartPasteHub.PasteAIFixed`,
+        commandKey: `${BG_PARENT_KEY}\\SmartPasteHub.PasteAIFixed\\command`,
+        label: "SmartPasteHub: Paste AI-Fixed",
+        command: `${this.execPath} --smart-paste-ai-fix "%V"`,
+      });
+      entries.push({
         parentKey: FILE_PARENT_KEY,
         actionKey: `${FILE_PARENT_KEY}\\SmartPasteHub.CleanCopy`,
         commandKey: `${FILE_PARENT_KEY}\\SmartPasteHub.CleanCopy\\command`,
-        label: "SmartPasteHub: Clean and Copy",
-        command: this.expectedFileCommand,
-      },
-      folder: {
+        label: "SmartPasteHub: Clean & Copy File",
+        command: `${this.execPath} --smart-clean-file "%1"`,
+      });
+      entries.push({
+        parentKey: FILE_PARENT_KEY,
+        actionKey: `${FILE_PARENT_KEY}\\SmartPasteHub.SummarizeFile`,
+        commandKey: `${FILE_PARENT_KEY}\\SmartPasteHub.SummarizeFile\\command`,
+        label: "SmartPasteHub: Summarize File",
+        command: `${this.execPath} --smart-summarize-file "%1"`,
+      });
+      entries.push({
         parentKey: FOLDER_PARENT_KEY,
         actionKey: `${FOLDER_PARENT_KEY}\\SmartPasteHub.PasteIntoFolder`,
         commandKey: `${FOLDER_PARENT_KEY}\\SmartPasteHub.PasteIntoFolder\\command`,
         label: "SmartPasteHub: Paste in This Folder",
-        command: this.expectedFolderCommand,
-      },
-    };
+        command: `${this.execPath} --smart-paste-dir "%1"`,
+      });
+    }
+
+    return { mode, entries };
   }
 
-  /**
-   * Registers both "Smart Paste as New File" (Directory Background)
-   * and "Clean & Copy to Clipboard" (Files).
-   */
   static async install(mode: ContextMenuMode = "top_level"): Promise<boolean> {
     if (!this.isWindows) return false;
 
@@ -152,19 +165,21 @@ export class ContextMenuManager {
       const config = this.configFor(mode);
       await this.removeLegacySmartPasteEntries(config);
       const iconPath = this.getIconPath();
-      await this.ensureInstalledEntries(iconPath, config);
+
+      for (const entry of config.entries) {
+        await this.installEntry(entry, iconPath, mode);
+      }
 
       const status = await this.getStatus(mode);
       if (status.installed) {
-        console.log("Context menu install command executed.");
         return true;
       }
 
-      // Repair once when entries exist but commands are stale/invalid.
       await this.uninstall();
-      await this.ensureInstalledEntries(iconPath, config);
+      for (const entry of config.entries) {
+        await this.installEntry(entry, iconPath, mode);
+      }
       const repaired = await this.getStatus(mode);
-      console.log("Context menu install repaired.");
       return repaired.installed;
     } catch (error) {
       console.error("Failed to install context menu:", error);
@@ -172,16 +187,10 @@ export class ContextMenuManager {
     }
   }
 
-  /**
-   * Removes all SmartPasteHub entries from the Windows Context Menu.
-   */
   static async uninstall(): Promise<boolean> {
     if (!this.isWindows) return false;
-
     try {
       await this.removeLegacySmartPasteEntries(undefined, true);
-
-      console.log("Context menu uninstall command executed.");
       return true;
     } catch (error) {
       console.error("Failed to uninstall context menu:", error);
@@ -189,79 +198,37 @@ export class ContextMenuManager {
     }
   }
 
-  /**
-   * Checks if the context menu is currently installed.
-   */
   static async isInstalled(): Promise<boolean> {
     if (!this.isWindows) return false;
     const status = await this.getStatus();
     return status.installed;
   }
 
-  static async getStatus(
-    mode: ContextMenuMode = "top_level",
-  ): Promise<ContextMenuStatus> {
+  static async getStatus(mode: ContextMenuMode = "top_level"): Promise<ContextMenuStatus> {
     if (!this.isWindows) {
-      return {
-        supported: false,
-        installed: false,
-        backgroundEntry: false,
-        fileEntry: false,
-        folderEntry: false,
-      };
+      return { supported: false, installed: false, installedCount: 0 };
     }
 
     const config = this.configFor(mode);
-    const backgroundEntry = await this.queryKeyExists(
-      config.background.actionKey,
-    );
-    const fileEntry = await this.queryKeyExists(config.file.actionKey);
-    const folderEntry = await this.queryKeyExists(config.folder.actionKey);
+    let installedCount = 0;
 
-    const actualBackgroundCommand = await this.queryValue(
-      config.background.commandKey,
-    );
-    const actualFileCommand = await this.queryValue(config.file.commandKey);
-    const actualFolderCommand = await this.queryValue(config.folder.commandKey);
-
-    const backgroundCommandMatch =
-      this.normalizeCommand(actualBackgroundCommand) ===
-      this.normalizeCommand(this.expectedBackgroundCommand);
-    const fileCommandMatch =
-      this.normalizeCommand(actualFileCommand) ===
-      this.normalizeCommand(this.expectedFileCommand);
-    const folderCommandMatch =
-      this.normalizeCommand(actualFolderCommand) ===
-      this.normalizeCommand(this.expectedFolderCommand);
+    for (const entry of config.entries) {
+      const exists = await this.queryKeyExists(entry.actionKey);
+      const cmd = await this.queryValue(entry.commandKey);
+      const cmdMatch = this.normalizeCommand(cmd) === this.normalizeCommand(entry.command);
+      if (exists && cmdMatch) {
+        installedCount++;
+      }
+    }
 
     return {
       supported: true,
       mode,
-      installed:
-        backgroundEntry &&
-        fileEntry &&
-        folderEntry &&
-        backgroundCommandMatch &&
-        fileCommandMatch &&
-        folderCommandMatch,
-      backgroundEntry,
-      fileEntry,
-      folderEntry,
-      backgroundCommandMatch,
-      fileCommandMatch,
-      folderCommandMatch,
-      actualBackgroundCommand: actualBackgroundCommand ?? undefined,
-      actualFileCommand: actualFileCommand ?? undefined,
-      actualFolderCommand: actualFolderCommand ?? undefined,
-      expectedBackgroundCommand: this.expectedBackgroundCommand,
-      expectedFileCommand: this.expectedFileCommand,
-      expectedFolderCommand: this.expectedFolderCommand,
+      installed: installedCount === config.entries.length,
+      installedCount,
     };
   }
 
-  /**
-   * Helper to execute 'reg' command line utilities.
-   */
   private static async runReg(args: string[]): Promise<string> {
     const { stdout, stderr } = await execFileAsync("reg", args, {
       windowsHide: true,
@@ -280,21 +247,13 @@ export class ContextMenuManager {
       .toLowerCase();
   }
 
-  private static async queryValue(
-    key: string,
-    valueName?: string,
-  ): Promise<string | null> {
-    const args = valueName
-      ? ["query", key, "/v", valueName]
-      : ["query", key, "/ve"];
-
+  private static async queryValue(key: string, valueName?: string): Promise<string | null> {
+    const args = valueName ? ["query", key, "/v", valueName] : ["query", key, "/ve"];
     try {
       const output = await this.runReg(args);
       const valueLabel = valueName ?? "(Default)";
       const escaped = valueLabel.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-      const match = output.match(
-        new RegExp(`${escaped}\\s+REG_\\w+\\s+(.+)$`, "im"),
-      );
+      const match = output.match(new RegExp(`${escaped}\\s+REG_\\w+\\s+(.+)$`, "im"));
       return match?.[1]?.trim() ?? null;
     } catch {
       return null;
@@ -312,9 +271,7 @@ export class ContextMenuManager {
 
   private static async deleteKeyIfExists(key: string): Promise<void> {
     const exists = await this.queryKeyExists(key);
-    if (!exists) {
-      return;
-    }
+    if (!exists) return;
     await this.runReg(["delete", key, "/f"]);
   }
 
@@ -337,64 +294,38 @@ export class ContextMenuManager {
   ): Promise<void> {
     const keep = new Set<string>();
     const configs = [this.configFor("top_level"), this.configFor("submenu")];
-    for (const config of configs) {
-      keep.add(config.background.actionKey.toLowerCase());
-      keep.add(config.file.actionKey.toLowerCase());
-      keep.add(config.folder.actionKey.toLowerCase());
-      if (config.background.groupKey)
-        keep.add(config.background.groupKey.toLowerCase());
-      if (config.file.groupKey) keep.add(config.file.groupKey.toLowerCase());
-      if (config.folder.groupKey)
-        keep.add(config.folder.groupKey.toLowerCase());
+
+    for (const c of configs) {
+      for (const entry of c.entries) {
+        keep.add(entry.actionKey.toLowerCase());
+        if (entry.groupKey) keep.add(entry.groupKey.toLowerCase());
+      }
     }
 
-    // If specific config passed, preserve only active config keys.
-    const keepActiveOnly = purgeAll
-      ? new Set<string>()
-      : activeConfig
-        ? new Set<string>([
-            activeConfig.background.actionKey.toLowerCase(),
-            activeConfig.file.actionKey.toLowerCase(),
-            activeConfig.folder.actionKey.toLowerCase(),
-            ...(activeConfig.background.groupKey
-              ? [activeConfig.background.groupKey.toLowerCase()]
-              : []),
-            ...(activeConfig.file.groupKey
-              ? [activeConfig.file.groupKey.toLowerCase()]
-              : []),
-            ...(activeConfig.folder.groupKey
-              ? [activeConfig.folder.groupKey.toLowerCase()]
-              : []),
-          ])
-        : keep;
+    const keepActiveOnly = purgeAll ? new Set<string>() : keep;
+    if (activeConfig && !purgeAll) {
+      keepActiveOnly.clear();
+      for (const entry of activeConfig.entries) {
+        keepActiveOnly.add(entry.actionKey.toLowerCase());
+        if (entry.groupKey) keepActiveOnly.add(entry.groupKey.toLowerCase());
+      }
+    }
 
     const parents = [BG_PARENT_KEY, FILE_PARENT_KEY, FOLDER_PARENT_KEY];
-
     for (const parent of parents) {
       const keys = await this.listSubKeys(parent);
       for (const key of keys) {
-        const normalized = key.toLowerCase();
+        const normalizedSrc = key.toLowerCase();
+        const normalized = normalizedSrc.replace(/^hkey_current_user\\/, "hkcu\\");
         const isSmartPasteKey =
           normalized.includes("\\smartpastehub") ||
           normalized.includes("\\smartpaste");
-        if (!isSmartPasteKey) {
-          continue;
-        }
-        if (!purgeAll && keepActiveOnly.has(normalized)) {
-          continue;
-        }
+
+        if (!isSmartPasteKey) continue;
+        if (!purgeAll && keepActiveOnly.has(normalized)) continue;
         await this.deleteKeyIfExists(key);
       }
     }
-  }
-
-  private static async ensureInstalledEntries(
-    iconPath: string,
-    config: ContextMenuConfig,
-  ): Promise<void> {
-    await this.installEntry(config.background, iconPath, config.mode);
-    await this.installEntry(config.file, iconPath, config.mode);
-    await this.installEntry(config.folder, iconPath, config.mode);
   }
 
   private static async installEntry(
@@ -403,98 +334,26 @@ export class ContextMenuManager {
     mode: ContextMenuMode,
   ): Promise<void> {
     if (mode === "submenu" && entry.groupKey) {
-      await this.runReg([
-        "add",
-        entry.groupKey,
-        "/ve",
-        "/d",
-        "SmartPasteHub",
-        "/f",
-      ]);
-      await this.runReg([
-        "add",
-        entry.groupKey,
-        "/v",
-        "Icon",
-        "/d",
-        iconPath,
-        "/f",
-      ]);
-      await this.runReg([
-        "add",
-        entry.groupKey,
-        "/v",
-        "MUIVerb",
-        "/d",
-        "SmartPasteHub",
-        "/f",
-      ]);
-      await this.runReg([
-        "add",
-        entry.groupKey,
-        "/v",
-        "Position",
-        "/d",
-        "Top",
-        "/f",
-      ]);
+      await this.runReg(["add", entry.groupKey, "/ve", "/d", "SmartPasteHub", "/f"]);
+      await this.runReg(["add", entry.groupKey, "/v", "Icon", "/d", iconPath, "/f"]);
+      await this.runReg(["add", entry.groupKey, "/v", "MUIVerb", "/d", "SmartPasteHub", "/f"]);
+      await this.runReg(["add", entry.groupKey, "/v", "Position", "/d", "Top", "/f"]);
+
+      // Extended menus to avoid blocking immediate context menu rendering
+      await this.runReg(["add", entry.groupKey, "/v", "ExtendedSubCommandsKey", "/d", entry.groupKey, "/f"]);
     }
 
     await this.runReg(["add", entry.actionKey, "/ve", "/d", entry.label, "/f"]);
-    await this.runReg([
-      "add",
-      entry.actionKey,
-      "/v",
-      "Icon",
-      "/d",
-      iconPath,
-      "/f",
-    ]);
-    await this.runReg([
-      "add",
-      entry.actionKey,
-      "/v",
-      "Position",
-      "/d",
-      "Top",
-      "/f",
-    ]);
-    await this.runReg([
-      "add",
-      entry.commandKey,
-      "/ve",
-      "/d",
-      entry.command,
-      "/f",
-    ]);
+    await this.runReg(["add", entry.actionKey, "/v", "Icon", "/d", iconPath, "/f"]);
+    await this.runReg(["add", entry.commandKey, "/ve", "/d", entry.command, "/f"]);
   }
 
-  /**
-   * Resolves the path to the app icon (.ico or .exe) to display in the context menu.
-   */
   private static getIconPath(): string {
-    // In production, the executable itself contains the icon.
-    if (app.isPackaged) {
-      return process.execPath;
-    }
-
-    // In development, prefer .ico file if present.
+    if (app.isPackaged) return process.execPath;
     const devIconPath = path.join(process.cwd(), "build", "icon.ico");
-    if (fs.existsSync(devIconPath)) {
-      return devIconPath;
-    }
-
-    const assetsIconPath = path.join(
-      process.cwd(),
-      "assets",
-      "icons",
-      "icon.ico",
-    );
-    if (fs.existsSync(assetsIconPath)) {
-      return assetsIconPath;
-    }
-
-    // Safe fallback to executable icon.
+    if (fs.existsSync(devIconPath)) return devIconPath;
+    const assetsIconPath = path.join(process.cwd(), "assets", "icons", "icon.ico");
+    if (fs.existsSync(assetsIconPath)) return assetsIconPath;
     return process.execPath;
   }
 }

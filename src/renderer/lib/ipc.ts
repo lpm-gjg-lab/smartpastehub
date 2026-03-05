@@ -28,12 +28,12 @@ export async function invokeIPC<T>(
   return response as T;
 }
 
-export function onIPC(
+export function onIPC<P = unknown>(
   channel: string,
-  listener: (payload: unknown) => void,
+  listener: (payload: P) => void,
 ): () => void {
   if (!hasSmartPasteBridge()) {
-    return () => {};
+    return () => { };
   }
-  return window.smartpaste.on(channel, (_, payload) => listener(payload));
+  return window.smartpaste.on(channel, (_, payload) => listener(payload as P));
 }

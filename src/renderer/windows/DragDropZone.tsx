@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { invokeIPC } from "../lib/ipc";
+import { Cross2Icon } from "@radix-ui/react-icons";
 
 interface ZoneItem {
   id: number;
@@ -23,7 +24,7 @@ export default function DragDropZone() {
   const [items, setItems] = useState<ZoneItem[]>([]);
   const [dragOverId, setDragOverId] = useState<number | null>(null);
   const [dragSrcId, setDragSrcId] = useState<number | null>(null);
-  const zoneRef = useRef<HTMLDivElement>(null);
+  const zoneRef = useRef<HTMLUListElement>(null);
 
   const loadItems = useCallback(async () => {
     try {
@@ -109,10 +110,11 @@ export default function DragDropZone() {
   const preview = (s: string) => (s.length > 60 ? s.slice(0, 60) + "…" : s);
 
   return (
-    <div
+    <main
+      aria-label="Drag and Drop Zone"
       style={{
-        width: 400,
-        height: 500,
+        width: "100%",
+        height: "100%",
         display: "flex",
         flexDirection: "column",
         background: "var(--bg-tertiary)",
@@ -126,7 +128,8 @@ export default function DragDropZone() {
       }}
     >
       {/* Header */}
-      <div
+      <h1
+        className="window-drag-region"
         style={{
           padding: "10px 14px",
           borderBottom: "1px solid var(--border-subtle)",
@@ -135,20 +138,40 @@ export default function DragDropZone() {
           display: "flex",
           alignItems: "center",
           gap: 8,
+          margin: 0,
         }}
       >
-        <span>⬇</span>
         <span>Drag & Drop Zone</span>
-        <span style={{ marginLeft: "auto", fontSize: 11, opacity: 0.5 }}>
+        <button
+          type="button"
+          className="window-no-drag"
+          aria-label="Close window"
+          onClick={() => window.close()}
+          style={{
+            marginLeft: "auto",
+            border: "none",
+            background: "transparent",
+            color: "var(--text-secondary)",
+            cursor: "pointer",
+            fontSize: 16,
+            lineHeight: 1,
+            borderRadius: 6,
+            padding: "2px 6px",
+          }}
+        >
+          <Cross2Icon />
+        </button>
+        <span style={{ fontSize: 11, opacity: 0.5 }}>
           {items.length} item{items.length !== 1 ? "s" : ""}
         </span>
-      </div>
+      </h1>
 
       {/* Drop zone */}
-      <div
+      <ul
         ref={zoneRef}
         onDragOver={handleZoneDragOver}
         onDrop={(e) => void handleZoneDrop(e)}
+        aria-label="Dropped items"
         style={{
           flex: 1,
           overflowY: "auto",
@@ -156,6 +179,8 @@ export default function DragDropZone() {
           display: "flex",
           flexDirection: "column",
           gap: 4,
+          listStyle: "none",
+          margin: 0,
         }}
       >
         {items.length === 0 ? (
@@ -170,12 +195,12 @@ export default function DragDropZone() {
               gap: 8,
             }}
           >
-            <div style={{ fontSize: 32 }}>📋</div>
+            <div style={{ fontSize: 16, fontWeight: 600 }}>Clipboard</div>
             <div style={{ fontSize: 12 }}>Drop text here from any app</div>
           </div>
         ) : (
           items.map((item) => (
-            <div
+            <li
               key={item.id}
               draggable
               onDragStart={() => handleCardDragStart(item.id)}
@@ -201,7 +226,10 @@ export default function DragDropZone() {
               }}
             >
               {/* Drag handle */}
-              <span style={{ opacity: 0.35, fontSize: 14, userSelect: "none" }}>
+              <span
+                aria-hidden="true"
+                style={{ opacity: 0.35, fontSize: 14, userSelect: "none" }}
+              >
                 ⠿
               </span>
               <div style={{ flex: 1, minWidth: 0 }}>
@@ -229,10 +257,10 @@ export default function DragDropZone() {
                   {item.contentType}
                 </span>
               </div>
-            </div>
+            </li>
           ))
         )}
-      </div>
+      </ul>
 
       {/* Action bar */}
       <div
@@ -249,8 +277,10 @@ export default function DragDropZone() {
           { label: "Clear", onClick: handleClear, primary: false },
         ].map(({ label, onClick, primary }) => (
           <button
+            type="button"
             key={label}
             onClick={() => void onClick()}
+            aria-label={label}
             style={{
               flex: primary ? 2 : 1,
               padding: "6px 0",
@@ -262,7 +292,7 @@ export default function DragDropZone() {
               background: primary
                 ? "var(--accent-primary)"
                 : "var(--glass-bg-hover)",
-              color: "#fff",
+              color: primary ? "#fff" : "var(--text-primary)",
               transition: "opacity 0.12s",
             }}
           >
@@ -270,6 +300,6 @@ export default function DragDropZone() {
           </button>
         ))}
       </div>
-    </div>
+    </main>
   );
 }

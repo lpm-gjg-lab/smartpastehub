@@ -1,6 +1,7 @@
 import { createRoot } from "react-dom/client";
 import App from "./App";
 import "./styles/globals.css";
+import "./i18n";
 
 import AutoChart from "./windows/AutoChart";
 import WebClipper from "./windows/WebClipper";
@@ -24,15 +25,25 @@ if (root) {
   else if (hash.startsWith("/paste-history-ring")) Component = PasteHistoryRing;
   else if (hash.startsWith("/template-form")) Component = TemplateForm;
   else if (hash.startsWith("/ocr")) Component = OCRPopup;
-  else if (hash.startsWith("/toast")) {
-    Component = ToastApp;
-    document.documentElement.classList.add("is-transparent-window");
-    document.body.classList.add("is-transparent-window");
-  }
+  else if (hash.startsWith("/toast")) Component = ToastApp;
   else if (hash.startsWith("/history")) appInitialTab = "history";
   else if (hash.startsWith("/settings")) appInitialTab = "settings";
   else if (hash.startsWith("/dashboard")) appInitialTab = "dashboard";
   else if (hash.startsWith("/paste")) appInitialTab = "paste";
+
+  // All floating windows are transparent Electron windows.
+  // Apply is-transparent-window AND sync theme from localStorage.
+  if (Component !== App) {
+    const t = "background-color:transparent!important;";
+    const savedTheme = localStorage.getItem("theme") || "dark";
+    document.documentElement.classList.add("is-transparent-window");
+    document.body.classList.add("is-transparent-window");
+    document.documentElement.style.cssText = t;
+    document.body.style.cssText = t;
+    root.style.cssText = t;
+    document.documentElement.setAttribute("data-theme", savedTheme);
+    document.body.setAttribute("data-theme", savedTheme);
+  }
 
   if (Component === App) {
     createRoot(root).render(<App initialTab={appInitialTab} />);
@@ -40,3 +51,4 @@ if (root) {
     createRoot(root).render(<Component />);
   }
 }
+

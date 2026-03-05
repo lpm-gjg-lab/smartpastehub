@@ -4,8 +4,11 @@ import { autoConvert } from "../../converter/json-yaml-toml";
 import { load } from "cheerio";
 import { shell } from "electron";
 import fs from "fs/promises";
+import os from "os";
+import path from "path";
 import TurndownService from "turndown";
 import { SafeHandle } from "./contracts";
+import { validateFetchUrl } from "../utils/url-validator";
 
 function convertCase(text: string, targetCase: string): string {
   const words = text
@@ -15,9 +18,17 @@ function convertCase(text: string, targetCase: string): string {
     .split(/\s+/);
   switch (targetCase) {
     case "camel":
-      return words.map((w, i) =>(i === 0 ? w.toLowerCase() : w.slice(0,1).toUpperCase() + w.slice(1).toLowerCase())).join("");
+      return words
+        .map((w, i) =>
+          i === 0
+            ? w.toLowerCase()
+            : w.slice(0, 1).toUpperCase() + w.slice(1).toLowerCase(),
+        )
+        .join("");
     case "pascal":
-      return words.map((w) => w.slice(0,1).toUpperCase() + w.slice(1).toLowerCase()).join("");
+      return words
+        .map((w) => w.slice(0, 1).toUpperCase() + w.slice(1).toLowerCase())
+        .join("");
     case "snake":
       return words.map((w) => w.toLowerCase()).join("_");
     case "kebab":
@@ -25,7 +36,9 @@ function convertCase(text: string, targetCase: string): string {
     case "screaming":
       return words.map((w) => w.toUpperCase()).join("_");
     case "title":
-      return words.map((w) => w.slice(0,1).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
+      return words
+        .map((w) => w.slice(0, 1).toUpperCase() + w.slice(1).toLowerCase())
+        .join(" ");
     case "lower":
       return text.toLowerCase();
     case "upper":
@@ -53,7 +66,9 @@ function calculateExpression(expression: string): string {
   const peek = () => input[pos] ?? "";
   const consume = () => input[pos++] ?? "";
 
-  const skipWs = () => { while (peek() === " " || peek() === "\t") pos++; };
+  const skipWs = () => {
+    while (peek() === " " || peek() === "\t") pos++;
+  };
 
   // Forward declarations
   let parseExpr: () => number;
@@ -68,11 +83,16 @@ function calculateExpression(expression: string): string {
       return val;
     }
     let num = "";
-    if (peek() === "-") { num += consume(); }
+    if (peek() === "-") {
+      num += consume();
+    }
     while (/[0-9.]/.test(peek())) num += consume();
     // percentage
     skipWs();
-    if (peek() === "%") { consume(); return Number(num) / 100; }
+    if (peek() === "%") {
+      consume();
+      return Number(num) / 100;
+    }
     const n = Number(num);
     if (!Number.isFinite(n)) throw new Error(`Invalid number: ${num}`);
     return n;
@@ -152,18 +172,67 @@ function markdownToText(input: string): string {
 }
 
 async function extractFileContent(filePath: string): Promise<string | null> {
-  const resolved = String(filePath ?? "").trim();
-  if (!resolved) {
+  const inputPath = String(filePath ?? "").trim();
+  if (!inputPath) {
     return null;
   }
 
-  const stat = await fs.stat(resolved);
+  const normalizedInputSegments = path
+    .normalize(inputPath)
+    .split(/[\\/]+/)
+    .filter(Boolean);
+  if (normalizedInputSegments.includes("..")) {
+    return null;
+  }
+
+  const resolvedPath = path.resolve(inputPath);
+  const resolvedSegments = resolvedPath.split(/[\\/]+/).filter(Boolean);
+  if (resolvedSegments.includes("..")) {
+    return null;
+  }
+
+  const blockedExtensions = new Set([
+    ".exe",
+    ".dll",
+    ".sys",
+    ".bat",
+    ".cmd",
+    ".ps1",
+    ".reg",
+  ]);
+  if (blockedExtensions.has(path.extname(resolvedPath).toLowerCase())) {
+    return null;
+  }
+
+  const blockedDirectories = new Set([
+    "windows",
+    "system32",
+    "program files",
+    "program files (x86)",
+  ]);
+  if (
+    resolvedSegments.some((segment) =>
+      blockedDirectories.has(segment.toLowerCase()),
+    )
+  ) {
+    return null;
+  }
+
+  const homeDir = path.resolve(os.homedir());
+  const relativeToHome = path.relative(homeDir, resolvedPath);
+  const outsideHome =
+    relativeToHome.startsWith("..") || path.isAbsolute(relativeToHome);
+  if (outsideHome) {
+    return null;
+  }
+
+  const stat = await fs.stat(resolvedPath);
   const maxBytes = 256 * 1024;
   if (stat.size > maxBytes) {
     return null;
   }
 
-  return fs.readFile(resolved, "utf8");
+  return fs.readFile(resolvedPath, "utf8");
 }
 
 async function scrapeUrlAsMarkdown(input: string): Promise<string> {
@@ -171,6 +240,8 @@ async function scrapeUrlAsMarkdown(input: string): Promise<string> {
   if (!url) {
     throw new Error("No URL found in input");
   }
+
+  validateFetchUrl(url);
 
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 10_000);
@@ -235,7 +306,9 @@ export function registerTransformIpc(safeHandle: SafeHandle): void {
     const input = String(payload ?? "");
     const urls = Array.from(new Set(input.match(/https?:\/\/[^\s]+/gi) ?? []));
     const toOpen = urls.slice(0, 10);
-    const results = await Promise.allSettled(toOpen.map((url) => shell.openExternal(url)));
+    const results = await Promise.allSettled(
+      toOpen.map((url) => shell.openExternal(url)),
+    );
     const opened = results.filter((r) => r.status === "fulfilled").length;
     const failed = results.length - opened;
     return {
@@ -243,8 +316,8 @@ export function registerTransformIpc(safeHandle: SafeHandle): void {
         toOpen.length === 0
           ? "No links found."
           : failed > 0
-          ? `Opened ${opened} link${opened !== 1 ? "s" : ""}, ${failed} failed.`
-          : `Opened ${opened} link${opened !== 1 ? "s" : ""}.`,
+            ? `Opened ${opened} link${opened !== 1 ? "s" : ""}, ${failed} failed.`
+            : `Opened ${opened} link${opened !== 1 ? "s" : ""}.`,
     };
   });
 
@@ -267,23 +340,30 @@ export function registerTransformIpc(safeHandle: SafeHandle): void {
   });
 
   safeHandle("transform:case-convert", async (_, payload) => {
-    const { text, targetCase } = payload as { text: string; targetCase: string };
+    const { text, targetCase } = payload as {
+      text: string;
+      targetCase: string;
+    };
     return { result: convertCase(text, targetCase) };
   });
 
   safeHandle("transform:translate", async (_, payload) => {
-    const { text, targetLang } = payload as { text: string; targetLang: "id" | "en" };
+    const { text, targetLang } = payload as {
+      text: string;
+      targetLang: "id" | "en";
+    };
     const settings = await getSettings();
     const ai = settings.ai;
-    const rewritten = await rewriteText(text, {
+    const result = await rewriteText(text, {
       mode: "translate",
       language: targetLang,
       translateTarget: targetLang,
-      provider: (ai.provider ?? "local") as import("../../ai/ai-rewriter").RewriteOptions["provider"],
+      provider: (ai.provider ??
+        "local") as import("../../ai/ai-rewriter").RewriteOptions["provider"],
       apiKey: ai.apiKey,
       baseUrl: ai.baseUrl,
       model: ai.model,
     });
-    return { result: rewritten };
+    return { result: result.text };
   });
 }

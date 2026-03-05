@@ -1,23 +1,23 @@
 # Smart Paste Hub
 
-A Windows desktop clipboard manager built with Electron + React + TypeScript. Automatically cleans, formats, and transforms clipboard content when you paste — with smart context awareness that adapts behavior based on which app you copied from and which app you're pasting into.
+A Windows desktop clipboard manager built with Electron + React + TypeScript. Automatically cleans, formats, and transforms clipboard content when you paste, with smart context awareness that adapts behavior based on which app you copied from and which app you're pasting into.
 
 ## Features
 
-- **Auto-clean on paste** — triggered by global hotkey (`Alt+Shift+V` by default), runs silently in the background
-- **Smart context rules** — detects copy source and paste target app, applies the right preset automatically (e.g. code from VS Code → terminal stays as-is, email from Outlook → strips quoted replies)
-- **20+ content types detected** — plain text, source code, JSON/YAML/TOML, HTML, CSV/TSV tables, email, PDF text, URLs, phone numbers, addresses, and more
-- **Unicode safety net** — fixes mojibake, NBSP, smart quotes, zero-width characters, soft hyphens, CRLF, and fullwidth ASCII on every paste
-- **Email cleaner** — strips quoted reply headers, trailing newsletter footers, and collapses excessive blank lines
-- **Code passthrough** — source code and structured data (JSON, YAML, TOML) are never whitespace-normalized
-- **AI rewrite** — fix grammar, rephrase, formalize, summarize, translate, bullet list, and more (requires API key)
-- **OCR** — screenshot-to-text via global hotkey
-- **Multi-copy** — collect multiple clipboard items and merge them
-- **Paste queue** — enqueue multiple items, paste them one at a time
-- **Clipboard ring** — browse recent clipboard history
-- **Security scanner** — detect and mask PII (API keys, emails, phone numbers, etc.)
-- **Plugin runtime (internal)** — core plugin runtime exists for built-in pipeline hooks; public plugin marketplace/UI is still planned
-- **HUD toasts** — non-intrusive floating notifications show what was applied on each paste
+- **Auto-clean on paste**, triggered by global hotkey (`Alt+Shift+V` by default), runs silently in the background
+- **Smart context rules**, detects copy source and paste target app, applies the right preset automatically (e.g. code from VS Code → terminal stays as-is, email from Outlook → strips quoted replies)
+- **20+ content types detected**, plain text, source code, JSON/YAML/TOML, HTML, CSV/TSV tables, email, PDF text, URLs, phone numbers, addresses, and more
+- **Unicode safety net**, fixes mojibake, NBSP, smart quotes, zero-width characters, soft hyphens, CRLF, and fullwidth ASCII on every paste
+- **Email cleaner**, strips quoted reply headers, trailing newsletter footers, and collapses excessive blank lines
+- **Code passthrough**, source code and structured data (JSON, YAML, TOML) are never whitespace-normalized
+- **AI rewrite**, fix grammar, rephrase, formalize, summarize, translate, bullet list, and more (requires API key)
+- **OCR**, screenshot-to-text via global hotkey
+- **Multi-copy**, collect multiple clipboard items and merge them
+- **Paste queue**, enqueue multiple items, paste them one at a time
+- **Clipboard ring**, browse recent clipboard history
+- **Security scanner**, detect and mask PII (API keys, emails, phone numbers, etc.) with "Mask & Paste" protection (gated by settings)
+- **Plugin runtime (internal)**, core plugin runtime registers built-in plugins at startup; public plugin marketplace/UI is still planned
+- **HUD toasts**, non-intrusive floating notifications show what was applied on each paste
 
 ## How It Works
 
@@ -26,17 +26,32 @@ Copy text from any app
         ↓
 Global hotkey (Alt+Shift+V) triggers paste flow
         ↓
-Context rule matched? → apply preset override
+Context rule matched? → apply preset override (e.g. codePassthrough)
         ↓
-Pipeline runs middlewares in order:
-  1. unicode-cleaner   (always — fixes encoding issues)
-  2. html-stripper     (if HTML clipboard data present)
-  3. line-break-fixer  (PDF-style wrapped lines)
-  4. table-converter   (CSV / TSV / HTML table → Markdown)
-  5. email-cleaner     (strips quoted replies and junk)
-  6. whitespace-normalizer (collapses extra spaces — skipped for code/data)
-  7. regex-transformer (user-defined find/replace rules)
-  8. ai-rewriter       (optional, requires AI provider)
+Pipeline runs 20+ middlewares in order:
+  1. unicode-cleaner      (always, fixes encoding issues)
+  2. html-stripper        (if HTML clipboard data present)
+  3. line-break-fixer     (PDF-style wrapped lines)
+  4. code-indent-fixer    (fixes mixed indentation)
+  5. table-converter      (CSV / TSV / HTML table → Markdown)
+  6. json-formatter       (pretty-prints JSON/YAML/TOML)
+  7. email-cleaner        (strips quoted replies and junk)
+  8. url-cleaner          (strips tracking params)
+  9. phone-normalizer     (standardizes formats)
+  10. timestamp-converter (normalizes date/time)
+  11. path-converter      (Win↔Unix path conversion)
+  12. color-converter     (normalizes CSS/HEX/RGB)
+  13. math-evaluator      (appends calculation results)
+  14. markdown-cleaner    (fixes MD syntax issues)
+  15. base64-codec        (decodes base64 content)
+  16. duplicate-line-remover (collapses identical lines)
+  17. whitespace-normalizer (collapses extra spaces, skipped for code/data)
+  18. symbol-stripper     (removes non-printable chars)
+  19. regex-transformer   (opt-in per-call find/replace)
+  20. ai-rewriter         (opt-in per-call AI features)
+
+Utility middlewares (opt-in only):
+  - sensitive-masker, slug-generator, list-sorter, case-converter, number-formatter
         ↓
 Cleaned text auto-pasted into target app
 HUD toast shows what was applied
@@ -138,7 +153,7 @@ All hotkeys are configurable in Settings.
 | `from-outlook-email`     | `OUTLOOK.EXE` + email_text     | any                                 | `emailClean`      |
 | `from-thunderbird-email` | `thunderbird.exe` + email_text | any                                 | `emailClean`      |
 
-Custom rules can be added via the Settings → Context Rules panel.
+Custom rules are applied automatically based on context. Rules can be added and managed in Settings -> Context Rules (or via direct configuration/API).
 
 ## IPC Architecture
 
@@ -153,11 +168,13 @@ Main process registers all IPC handlers in `src/main/ipc/index.ts` using a `safe
 - Code of conduct: `CODE_OF_CONDUCT.md`
 - Security policy: `SECURITY.md`
 - Support channels: `SUPPORT.md`
-- Community templates: `.github/ISSUE_TEMPLATE/`, `.github/pull_request_template.md`
+- Community templates: `.github/ISSUE_TEMPLATE/` (templates may be added in future releases)
 - Security automation: CodeQL, dependency review, and Dependabot workflows
 
-## Security Notes
+## History & Security
 
-- Do not commit secrets in any file.
-- Use the private reporting channel in `SECURITY.md` for vulnerabilities.
-- IPC handlers validate all inputs; desktop integrations follow least-privilege.
+- **History Pruning**, automatically enforces `maxItems` and `retentionDays` settings (pinned items are preserved).
+- **Security Scanner**, gated by `settings.security.detectSensitive`. When PII is detected, the user is prompted with three options: **Paste**, **Mask & Paste**, or **Cancel**.
+- **Plugin Status**, Built-in plugins are registered at startup. The runtime is currently internal-only.
+
+## Security Notes

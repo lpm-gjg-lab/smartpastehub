@@ -34,6 +34,7 @@ interface FormatLearningRule {
   id: string;
   appName: string;
   contentType: ContentType;
+  fieldIntent?: string;
   suggestedPreset: string;
   confidence: number;
   count: number;
@@ -58,13 +59,17 @@ const ALWAYS_PLAIN_TYPES = new Set<ContentType>([
   "math_expression",
 ]);
 
-const DOC_APPS = /(word|onenote|outlook|notion|docs|google docs)/i;
-const CHAT_APPS = /(slack|discord|teams|telegram|whatsapp|line|wechat)/i;
-const BROWSER_APPS = /(chrome|firefox|edge|brave|opera|arc)/i;
-const CODE_APPS = /(code|cursor|sublime|vim|nvim|idea|webstorm)/i;
+const DOC_APPS =
+  /(word|onenote|outlook|notion|docs|google docs|pages|obsidian|evernote|confluence|quip)/i;
+const CHAT_APPS =
+  /(slack|discord|teams|telegram|whatsapp|line|wechat|skype|mattermost|rocket\.chat|signal)/i;
+const BROWSER_APPS = /(chrome|firefox|edge|brave|opera|arc|vivaldi)/i;
+const CODE_APPS =
+  /(code|cursor|sublime|vim|nvim|idea|webstorm|pycharm|android studio|xcode|atom)/i;
 const PLAIN_APPS =
-  /(terminal|powershell|cmd|shell|notepad|alacritty|wezterm|konsole|iterm)/i;
-const SPREADSHEET_APPS = /(excel|sheets|google sheets|numbers)/i;
+  /(terminal|powershell|cmd|shell|notepad|alacritty|wezterm|konsole|iterm|tmux|nano|micro)/i;
+const SPREADSHEET_APPS =
+  /(excel|sheets|google sheets|numbers|calc|airtable|smartsheet)/i;
 
 const APP_POLICY_OVERRIDES: Array<{
   appPattern: RegExp;
@@ -148,6 +153,67 @@ function normalizeAppName(appName?: string): string {
   return String(appName ?? "unknown").trim() || "unknown";
 }
 
+function appIdentityKey(appName: string): string {
+  return appName
+    .toLowerCase()
+    .trim()
+    .replace(/\.exe$/i, "")
+    .replace(/\.app$/i, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+function normalizeFieldBucket(fieldIntent?: string): string {
+  const raw = String(fieldIntent ?? "")
+    .trim()
+    .toLowerCase();
+  if (!raw) return "general";
+  if (
+    raw === "general" ||
+    raw === "rich" ||
+    raw === "compact" ||
+    raw === "code" ||
+    raw === "terminal" ||
+    raw === "spreadsheet"
+  ) {
+    return raw;
+  }
+  if (
+    raw.includes("spreadsheet") ||
+    raw.includes("grid") ||
+    raw.includes("cell")
+  ) {
+    return "spreadsheet";
+  }
+  if (
+    raw.includes("terminal") ||
+    raw.includes("command") ||
+    raw.includes("shell")
+  ) {
+    return "terminal";
+  }
+  if (raw.includes("code") || raw.includes("query")) {
+    return "code";
+  }
+  if (
+    raw.includes("search") ||
+    raw.includes("title") ||
+    raw.includes("subject") ||
+    raw.includes("compact")
+  ) {
+    return "compact";
+  }
+  if (
+    raw.includes("body") ||
+    raw.includes("message") ||
+    raw.includes("editor") ||
+    raw.includes("long_form")
+  ) {
+    return "rich";
+  }
+  return "general";
+}
+
 function resolvePolicyPack(appType: TargetAppType, appName: string): string {
   if (appType === "terminal" || PLAIN_APPS.test(appName))
     return "terminal-safe";
@@ -164,22 +230,48 @@ function learnedBias(
   learnedRules: AppSettings["autoLearnedRules"] | undefined,
   appName: string,
   detectedType: ContentType,
+  fieldIntent?: string,
 ): { rich: number; plain: number } {
   const rules = learnedRules ?? [];
   let rich = 0;
   let plain = 0;
+  const targetAppKey = appIdentityKey(appName);
+  const targetFieldBucket = normalizeFieldBucket(fieldIntent);
+  const now = Date.now();
 
   for (const rule of rules) {
     if (!rule.id.startsWith("format-")) continue;
-    if (rule.appName.toLowerCase() !== appName.toLowerCase()) continue;
+    if (appIdentityKey(rule.appName) !== targetAppKey) continue;
     if (rule.contentType !== detectedType) continue;
 
-    const weightedConfidence = clamp(rule.confidence, 0, 1) * 0.45;
+    const ruleFieldBucket = normalizeFieldBucket(rule.fieldIntent);
+    if (
+      ruleFieldBucket !== "general" &&
+      ruleFieldBucket !== targetFieldBucket
+    ) {
+      continue;
+    }
+
+    const ageMs = Math.max(0, now - new Date(rule.updatedAt).getTime());
+    const ageDays = ageMs / (1000 * 60 * 60 * 24);
+    const recencyWeight = clamp(Math.exp(-ageDays / 21), 0.2, 1);
+    const countWeight = clamp(Math.log2((rule.count ?? 0) + 1) / 3, 0, 1);
+    const weightedConfidence =
+      (0.2 + clamp(rule.confidence, 0, 1) * 0.25 + countWeight * 0.2) *
+      recencyWeight;
+    const fieldSpecificityWeight =
+      ruleFieldBucket === targetFieldBucket
+        ? 1
+        : ruleFieldBucket === "general"
+          ? 0.65
+          : 0.8;
+    const finalWeight = weightedConfidence * fieldSpecificityWeight;
+
     if (rule.suggestedPreset === "format:rich") {
-      rich += weightedConfidence;
+      rich += finalWeight;
     }
     if (rule.suggestedPreset === "format:plain") {
-      plain += weightedConfidence;
+      plain += finalWeight;
     }
   }
 
@@ -191,6 +283,8 @@ export function planPasteStrategy(
 ): PasteStrategyDecision {
   const appName = normalizeAppName(input.targetAppName);
   const sourceAppName = normalizeAppName(input.sourceAppName);
+  const sourceAppKey = appIdentityKey(sourceAppName);
+  const appKey = appIdentityKey(appName);
   const fieldIntent = String(input.fieldIntent ?? "").toLowerCase();
   const text = String(input.cleanedText ?? "");
   const hasHtml = Boolean(String(input.sourceHtml ?? "").trim());
@@ -303,7 +397,7 @@ export function planPasteStrategy(
     reasons.push("source-code-protect");
   }
 
-  if (sourceAppName === appName && isStructureContent) {
+  if (sourceAppKey === appKey && isStructureContent) {
     richScore += 0.2;
     reasons.push("same-app-structure");
   }
@@ -333,6 +427,7 @@ export function planPasteStrategy(
     input.autoLearnedRules,
     appName,
     input.detectedType,
+    fieldIntent,
   );
   richScore += learned.rich;
   plainScore += learned.plain;
@@ -388,9 +483,17 @@ export function planPasteStrategy(
   };
 }
 
-function formatRuleId(appName: string, contentType: ContentType): string {
-  const normalized = appName.toLowerCase().replace(/[^a-z0-9]+/g, "_");
-  return `format-${normalized}-${contentType}`;
+function formatRuleId(
+  appName: string,
+  contentType: ContentType,
+  fieldIntent?: string,
+): string {
+  const normalized = appIdentityKey(appName).replace(/[^a-z0-9]+/g, "_");
+  const fieldBucket = normalizeFieldBucket(fieldIntent);
+  if (fieldBucket === "general") {
+    return `format-${normalized}-${contentType}`;
+  }
+  return `format-${normalized}-${contentType}--${fieldBucket}`;
 }
 
 export function learnPasteStrategyFeedback(
@@ -398,13 +501,15 @@ export function learnPasteStrategyFeedback(
   input: {
     appName: string;
     contentType: ContentType;
+    fieldIntent?: string;
     selectedIntent: FormattingIntent;
     confidence: number;
   },
 ): NonNullable<AppSettings["autoLearnedRules"]> {
   const rules = [...(existingRules ?? [])];
   const appName = normalizeAppName(input.appName);
-  const id = formatRuleId(appName, input.contentType);
+  const fieldBucket = normalizeFieldBucket(input.fieldIntent);
+  const id = formatRuleId(appName, input.contentType, fieldBucket);
   const strategyPreset =
     input.selectedIntent === "rich_text" ? "format:rich" : "format:plain";
   const confidence = clamp(input.confidence, 0.15, 0.95);
@@ -428,6 +533,7 @@ export function learnPasteStrategyFeedback(
 
     rules[idx] = {
       ...current,
+      fieldIntent: fieldBucket === "general" ? undefined : fieldBucket,
       suggestedPreset: sameIntent ? current.suggestedPreset : strategyPreset,
       count: nextCount,
       confidence: blendedConfidence,
@@ -440,6 +546,7 @@ export function learnPasteStrategyFeedback(
     id,
     appName,
     contentType: input.contentType,
+    fieldIntent: fieldBucket === "general" ? undefined : fieldBucket,
     suggestedPreset: strategyPreset,
     confidence,
     count: 1,
@@ -453,6 +560,7 @@ export function applyExplicitPasteFeedback(
   input: {
     appName: string;
     contentType: ContentType;
+    fieldIntent?: string;
     expectedIntent: FormattingIntent;
     weight?: number;
   },
@@ -466,6 +574,7 @@ export function applyExplicitPasteFeedback(
     rules = learnPasteStrategyFeedback(rules, {
       appName: input.appName,
       contentType: input.contentType,
+      fieldIntent: input.fieldIntent,
       selectedIntent: input.expectedIntent,
       confidence: clamp(0.65 + i * 0.05, 0.65, 0.95),
     });

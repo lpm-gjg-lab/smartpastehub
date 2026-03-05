@@ -34,22 +34,44 @@ const SYSTEM_PROMPTS: Record<RewriteMode, string> = {
   detect_tone: "Classify the tone of this text in one word (formal/informal/aggressive/friendly/neutral/professional). Then in one sentence explain why. Format exactly as: TONE: <word>\nWHY: <sentence>",
 };
 
+/**
+ * Strip HTML tags and collapse whitespace from an API error body so that
+ * toasts show a clean one-line message rather than a wall of HTML.
+ */
+function sanitiseErrorBody(body: string, maxLen = 120): string {
+  return body
+    .replace(/<[^>]+>/g, " ")  // strip tags
+    .replace(/&[a-z]+;/gi, " ") // strip HTML entities
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, maxLen);
+}
+
 function langInstruction(language: "id" | "en"): string {
   return language === "id" ? " Respond in Indonesian." : " Respond in English.";
+}
+
+export interface RewriteResult {
+  text: string;
+  usage: {
+    promptTokens: number;
+    completionTokens: number;
+    totalTokens: number;
+  };
 }
 
 export async function rewriteText(
   text: string,
   options: RewriteOptions,
-): Promise<string> {
+): Promise<RewriteResult> {
   // Build system prompt — translate mode uses target language directly
   let systemPrompt = SYSTEM_PROMPTS[options.mode];
   if (options.mode === "translate" && options.translateTarget) {
     const lang = options.translateTarget === "id" ? "Indonesian" : "English";
     systemPrompt = `Translate the following text to ${lang}. Respond ONLY with the translation, no explanation.`;
   } else if (options.mode !== "bullet_list" && options.mode !== "numbered_list" &&
-             options.mode !== "to_table" && options.mode !== "join_lines" &&
-             options.mode !== "detect_tone") {
+    options.mode !== "to_table" && options.mode !== "join_lines" &&
+    options.mode !== "detect_tone") {
     systemPrompt += langInstruction(options.language);
   }
   // ── OpenAI-compatible (openai + deepseek + xai + custom) ───────────────────
@@ -65,8 +87,8 @@ export async function rewriteText(
         options.provider === "deepseek"
           ? "https://api.deepseek.com/v1"
           : options.provider === "xai"
-          ? "https://api.x.ai/v1"
-          : "https://api.openai.com/v1";
+            ? "https://api.x.ai/v1"
+            : "https://api.openai.com/v1";
       const baseUrl = options.baseUrl?.trim()
         ? options.baseUrl.replace(/\/$/, "")
         : defaultBase;
@@ -76,8 +98,8 @@ export async function rewriteText(
         (options.provider === "deepseek"
           ? "deepseek-chat"
           : options.provider === "xai"
-          ? "grok-3-mini"
-          : "gpt-4o-mini");
+            ? "grok-3-mini"
+            : "gpt-4o-mini");
 
       const response = await fetch(`${baseUrl}/chat/completions`, {
         method: "POST",
@@ -97,9 +119,8 @@ export async function rewriteText(
 
       if (!response.ok) {
         const body = await response.text().catch(() => "");
-        throw new Error(
-          `AI API error: ${response.status} ${response.statusText}${body ? ` — ${body}` : ""}`,
-        );
+        const detail = body ? ` — ${sanitiseErrorBody(body)}` : "";
+        throw new Error(`AI API error: ${response.status} ${response.statusText}${detail}`);
       }
 
       const contentType = response.headers.get("content-type") ?? "";
@@ -115,7 +136,15 @@ export async function rewriteText(
       if (!data?.choices?.[0]?.message?.content) {
         throw new Error(`AI API returned unexpected response shape: ${JSON.stringify(data).slice(0, 200)}`);
       }
-      return (data.choices[0].message.content as string) ?? text;
+      const usage = data.usage ?? {};
+      return {
+        text: (data.choices[0].message.content as string) ?? text,
+        usage: {
+          promptTokens: Number(usage.prompt_tokens ?? 0),
+          completionTokens: Number(usage.completion_tokens ?? 0),
+          totalTokens: Number(usage.total_tokens ?? 0),
+        },
+      };
     } catch (e) {
       console.error("OpenAI/Custom Rewrite failed:", e);
       throw e;
@@ -128,21 +157,31 @@ export async function rewriteText(
       const model = options.model?.trim() || "gemini-2.5-flash";
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${options.apiKey}`;
 
-      const response = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          system_instruction: { parts: [{ text: systemPrompt }] },
-          contents: [{ parts: [{ text }] }],
-          generationConfig: { temperature: 0.7 },
-        }),
-      });
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 60000);
+
+      let response;
+      try {
+        response = await fetch(url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: `${systemPrompt}
+
+${text}` }] }],
+          }),
+          signal: controller.signal,
+        });
+      } finally {
+        clearTimeout(timeoutId);
+      }
 
       if (!response.ok) {
         const body = await response.text().catch(() => "");
-        throw new Error(
-          `Gemini API error: ${response.status} ${response.statusText}${body ? ` — ${body}` : ""}`,
-        );
+        const detail = body ? ` — ${sanitiseErrorBody(body)}` : "";
+        throw new Error(`Gemini API error: ${response.status} ${response.statusText}${detail}`);
       }
 
       const ct1 = response.headers.get("content-type") ?? "";
@@ -153,12 +192,23 @@ export async function rewriteText(
           `check your API key and model. Preview: ${preview.slice(0, 120)}`,
         );
       }
-      const data = await response.json();
-      const content = data?.candidates?.[0]?.content?.parts?.[0]?.text as
-        | string
-        | undefined;
+      let data;
+      try {
+        data = await response.json();
+      } catch {
+        throw new Error("Gemini API returned malformed JSON response");
+      }
+      const content = data?.candidates?.[0]?.content?.parts?.[0]?.text as string | undefined;
       if (!content) throw new Error("Gemini returned empty response");
-      return content;
+      const gUsage = data?.usageMetadata ?? {};
+      return {
+        text: content,
+        usage: {
+          promptTokens: Number(gUsage.promptTokenCount ?? 0),
+          completionTokens: Number(gUsage.candidatesTokenCount ?? 0),
+          totalTokens: Number(gUsage.totalTokenCount ?? 0),
+        },
+      };
     } catch (e) {
       console.error("Gemini Rewrite failed:", e);
       throw e;
@@ -174,27 +224,35 @@ export async function rewriteText(
 
       const model = options.model?.trim() || "claude-3-5-haiku-20241022";
 
-      const response = await fetch(`${baseUrl}/messages`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-api-key": options.apiKey,
-          "anthropic-version": "2023-06-01",
-        },
-        body: JSON.stringify({
-          model,
-          max_tokens: 4096,
-          system: systemPrompt,
-          messages: [{ role: "user", content: text }],
-          temperature: 0.7,
-        }),
-      });
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 60000);
+
+      let response;
+      try {
+        response = await fetch(`${baseUrl}/messages`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-api-key": options.apiKey,
+            "anthropic-version": "2023-06-01",
+            "anthropic-dangerously-allow-browser": "true",
+          },
+          body: JSON.stringify({
+            model,
+            max_tokens: 1024,
+            system: systemPrompt,
+            messages: [{ role: "user", content: text }],
+          }),
+          signal: controller.signal,
+        });
+      } finally {
+        clearTimeout(timeoutId);
+      }
 
       if (!response.ok) {
         const body = await response.text().catch(() => "");
-        throw new Error(
-          `Anthropic API error: ${response.status} ${response.statusText}${body ? ` — ${body}` : ""}`,
-        );
+        const detail = body ? ` — ${sanitiseErrorBody(body)}` : "";
+        throw new Error(`Anthropic API error: ${response.status} ${response.statusText}${detail}`);
       }
 
       const ct2 = response.headers.get("content-type") ?? "";
@@ -205,10 +263,23 @@ export async function rewriteText(
           `check your Base URL setting. Preview: ${preview.slice(0, 120)}`,
         );
       }
-      const data = await response.json();
+      let data;
+      try {
+        data = await response.json();
+      } catch {
+        throw new Error("Anthropic API returned malformed JSON response");
+      }
       const content = data?.content?.[0]?.text as string | undefined;
       if (!content) throw new Error("Anthropic returned empty response");
-      return content;
+      const aUsage = data?.usage ?? {};
+      return {
+        text: content,
+        usage: {
+          promptTokens: Number(aUsage.input_tokens ?? 0),
+          completionTokens: Number(aUsage.output_tokens ?? 0),
+          totalTokens: Number((aUsage.input_tokens ?? 0) + (aUsage.output_tokens ?? 0)),
+        },
+      };
     } catch (e) {
       console.error("Anthropic Rewrite failed:", e);
       throw e;
@@ -216,5 +287,5 @@ export async function rewriteText(
   }
 
   // Fallback — local / no API key
-  return text;
+  return { text, usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 } };
 }

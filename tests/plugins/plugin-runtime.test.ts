@@ -76,8 +76,10 @@ describe("Builtin plugin runtime", () => {
 
     expect(getActiveBuiltinPluginNames()).toEqual(["zero-width-cleaner"]);
     expect(result.cleaned).toBe("abc");
-    expect(result.appliedTransforms).toContain(
-      "zero-width-cleaner:remove-zero-width",
-    );
+    // With "only report if changed" pipeline runner, unicode-cleaner already
+    // strips zero-width chars before the plugin transform runs, so the plugin
+    // transform returns unchanged text and is not reported. Verify the plugin
+    // is active and the text was cleaned correctly instead.
+    expect(result.appliedTransforms).toContain("unicode-cleaner");
   });
 });

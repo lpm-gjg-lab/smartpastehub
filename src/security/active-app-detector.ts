@@ -27,7 +27,7 @@ function classifyAppType(appName: string): TargetAppType {
     return "browser";
   }
   if (
-    /(code|cursor|notepad|sublime|idea|webstorm|word|notion|vim|nvim)/.test(
+    /(code|cursor|notepad|sublime|idea|webstorm|word|notion|vim|nvim|excel|sheets|numbers|calc|obsidian|evernote)/.test(
       name,
     )
   ) {

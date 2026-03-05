@@ -6,14 +6,15 @@
  */
 import { BrowserWindow, screen } from "electron";
 import path from "path";
-import fs from "fs";
+import { resolveAppIconPath } from "./utils/icon-resolver";
+import { SensitiveMatch } from "../shared/types";
 
 export interface HudPayload {
   cleaned: string;
   original: string;
   changes?: string[];
   type: string;
-  securityAlert?: unknown;
+  securityAlert?: { matches: SensitiveMatch[]; text: string };
   isMerged?: boolean;
   mergedCount?: number;
   sourceApp?: string;
@@ -36,20 +37,13 @@ let hudWindow: BrowserWindow | null = null;
 let hideTimer: NodeJS.Timeout | null = null;
 let lastAutoCleanHudAt = 0;
 
-function resolveAppIconPath(): string | undefined {
-  const candidates = [
-    path.join(__dirname, "../../assets/tray/icon.png"),
-    path.join(__dirname, "../../logo.png"),
-    path.join(process.cwd(), "logo.png"),
-  ];
-  return candidates.find((c) => fs.existsSync(c));
-}
 
 function getHudBounds(contentHeight = 160) {
   const display = screen.getPrimaryDisplay();
   const { width: sw, height: sh } = display.workAreaSize;
   const w = 420;
-  const h = Math.max(120, Math.min(contentHeight, 320));
+  // Increase max height to 500 so multiple rows of buttons and long changes fit
+  const h = Math.max(120, Math.min(contentHeight, 500));
   const margin = 16;
   return { x: sw - w - margin, y: sh - h - margin, width: w, height: h };
 }
@@ -102,17 +96,40 @@ function scheduleHide(ms = 5000) {
   }, ms);
 }
 
-/** Estimate HUD height based on content. */
+/** Estimate HUD height based on content to size the transparent window. */
 function estimateHeight(payload: HudPayload): number {
-  // Base: header (48) + action bar (40) + padding (24)
-  let h = 112;
-  // Content preview: ~20px per 60 chars, capped at 4 lines
-  const lines = Math.min(Math.ceil(payload.cleaned.length / 60), 4);
-  h += lines * 20;
-  // Changes list: 18px per transform
+  // Base: header (50) + padding (32) + action bar base row (46) = 128
+  let h = 128;
+
+  // Content preview: count actual newlines, wrap at 50 chars, max 5 lines
+  const text = payload.cleaned || "";
+  const lines = Math.min(
+    text.split("\n").reduce((acc, line) => acc + Math.ceil(Math.max(1, line.length) / 50), 0),
+    5,
+  );
+  h += lines * 22;
+
+  // Changes list: 20px per transform
   if (payload.changes && payload.changes.length > 0) {
-    h += Math.min(payload.changes.length, 5) * 18;
+    h += Math.min(payload.changes.length, 6) * 20;
   }
+
+  // Account for action buttons logic
+  // "auto_clean" / "paste_clean" has 5 buttons -> wrapping to 2 rows
+  if (payload.type === "auto_clean" || payload.type === "paste_clean") {
+    h += 48; // extra row height
+  } else if (payload.type === "command_palette") {
+    // Up to 8 preset buttons, 3 per row -> max 3 rows.
+    const opts = payload.paletteOptions?.length || 0;
+    const extraRows = Math.max(0, Math.ceil(opts / 3) - 1);
+    h += extraRows * 42;
+  } else if (payload.type === "sensitive_warning") {
+    // 3 buttons, fits 1 row
+  } else {
+    // Default / smart actions can have 5-6 buttons (2 rows)
+    h += 42;
+  }
+
   return h;
 }
 

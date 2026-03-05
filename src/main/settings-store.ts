@@ -1,12 +1,65 @@
 import fs from "fs/promises";
 import path from "path";
-import { app } from "electron";
+import { app, safeStorage } from "electron";
 import { AppSettings } from "../shared/types";
 import { DEFAULT_SETTINGS } from "../shared/constants";
 
 const mutableDefaults = JSON.parse(
   JSON.stringify(DEFAULT_SETTINGS),
 ) as AppSettings;
+
+function isSecurePlatform(): boolean {
+  return process.platform === "win32" || process.platform === "darwin";
+}
+
+function isEncryptedApiKey(value: string): boolean {
+  return value.startsWith("enc:");
+}
+
+function encryptApiKey(plaintext: string): string {
+  const value = plaintext.trim();
+  if (!value) {
+    return plaintext;
+  }
+
+  // Already encrypted payload from disk; keep as-is.
+  if (isEncryptedApiKey(value)) {
+    return plaintext;
+  }
+
+  if (!safeStorage.isEncryptionAvailable()) {
+    // Fail closed on platforms where secure storage is expected.
+    if (isSecurePlatform()) {
+      throw new Error("Secure storage is unavailable for API key encryption");
+    }
+    // Linux/headless fallback: keep plaintext to avoid total settings lockout.
+    return plaintext;
+  }
+
+  const encrypted = safeStorage.encryptString(plaintext);
+  return `enc:${encrypted.toString("base64")}`;
+}
+
+function decryptApiKey(stored: string): string {
+  if (!stored.startsWith("enc:")) {
+    return stored;
+  }
+
+  const encoded = stored.slice(4);
+  if (!encoded) {
+    return "";
+  }
+
+  try {
+    const encrypted = Buffer.from(encoded, "base64");
+    if (!safeStorage.isEncryptionAvailable()) {
+      return stored;
+    }
+    return safeStorage.decryptString(encrypted);
+  } catch {
+    return stored;
+  }
+}
 
 function getConfigPath(): string {
   return path.join(app.getPath("userData"), "config.json");
@@ -57,14 +110,18 @@ function mergeSettings(
         sensitiveTtlSeconds: 90,
         sensitiveAllowlistApps: [],
         enablePrivacyFirewall: true,
+        firewallRedactionMode: "display_only",
+        autoMutateOnPublicApps: false,
+        mutateClipboardApps: [],
         neverPersistSensitive: true,
       }),
       ...(partial.privacy ?? {}),
     },
     diagnostics: {
       ...(base.diagnostics ?? {
-        observabilityEnabled: true,
+        observabilityEnabled: false, // default OFF — user must opt-in
         maxEvents: 500,
+        telemetryDeviceId: "",
       }),
       ...(partial.diagnostics ?? {}),
     },
@@ -79,7 +136,32 @@ async function readDiskSettings(): Promise<AppSettings> {
   try {
     const raw = await fs.readFile(configPath, "utf8");
     const parsed = JSON.parse(raw) as Partial<AppSettings>;
-    return mergeSettings(mutableDefaults, parsed);
+    let shouldMigratePlainApiKey = false;
+
+    if (parsed.ai?.apiKey) {
+      const diskValue = String(parsed.ai.apiKey);
+      if (isEncryptedApiKey(diskValue)) {
+        parsed.ai = {
+          ...parsed.ai,
+          apiKey: decryptApiKey(diskValue),
+        };
+      } else if (safeStorage.isEncryptionAvailable()) {
+        // Plaintext key found on disk while encryption is available.
+        // Keep runtime behavior unchanged, then migrate the file atomically.
+        shouldMigratePlainApiKey = true;
+      }
+    }
+
+    const merged = mergeSettings(mutableDefaults, parsed);
+    if (shouldMigratePlainApiKey) {
+      try {
+        await writeDiskSettings(merged);
+      } catch {
+        // If migration fails we still return a usable runtime config.
+      }
+    }
+
+    return merged;
   } catch (error) {
     const maybeError = error as NodeJS.ErrnoException;
     if (maybeError.code !== "ENOENT") {
@@ -94,7 +176,17 @@ async function readDiskSettings(): Promise<AppSettings> {
 async function writeDiskSettings(settings: AppSettings): Promise<void> {
   const configPath = getConfigPath();
   const tempPath = `${configPath}.tmp`;
-  const payload = JSON.stringify(settings, null, 2);
+  const settingsToPersist: AppSettings = {
+    ...settings,
+    ai: {
+      ...settings.ai,
+      apiKey:
+        settings.ai.apiKey && settings.ai.apiKey.trim()
+          ? encryptApiKey(settings.ai.apiKey)
+          : settings.ai.apiKey,
+    },
+  };
+  const payload = JSON.stringify(settingsToPersist, null, 2);
   await fs.writeFile(tempPath, payload, "utf8");
   await fs.rename(tempPath, configPath);
 }

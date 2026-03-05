@@ -9,8 +9,14 @@ import {
   getPluginTransformMiddlewares,
 } from "../plugins/plugin-runtime";
 
+export interface CleanContentOptions {
+  /** Skip PII/sensitive data scanning (e.g. when settings.security.detectSensitive is false) */
+  skipSensitiveScan?: boolean;
+}
+
 export async function cleanContent(
   content: ClipboardContent,
+  options?: CleanContentOptions,
 ): Promise<CleanResult> {
   let contentAfterHooks: ClipboardContent = content;
 
@@ -44,18 +50,19 @@ export async function cleanContent(
       cleaned = contentAfterHooks.text;
       appliedTransforms = [];
     }
-
-    try {
-      const matches = detectSensitiveData(cleaned);
-      if (matches.length > 0) {
-        return {
-          cleaned,
-          securityAlert: { matches, text: cleaned },
-          appliedTransforms,
-        };
+    if (!options?.skipSensitiveScan) {
+      try {
+        const matches = detectSensitiveData(cleaned);
+        if (matches.length > 0) {
+          return {
+            cleaned,
+            securityAlert: { matches, text: cleaned },
+            appliedTransforms,
+          };
+        }
+      } catch (error) {
+        logger.warn("Security scan failed, skipping", { error });
       }
-    } catch (error) {
-      logger.warn("Security scan failed, skipping", { error });
     }
 
     return { cleaned, securityAlert: null, appliedTransforms };

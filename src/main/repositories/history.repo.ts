@@ -147,4 +147,38 @@ export class HistoryRepository {
     );
     return row?.cnt ?? 0;
   }
+
+  /**
+   * Prune history to enforce maxItems and retentionDays limits.
+   * Pinned items are preserved regardless of limits.
+   */
+  prune(maxItems: number, retentionDays: number): number {
+    let totalDeleted = 0;
+
+    // Delete entries older than retentionDays (skip pinned)
+    if (retentionDays > 0) {
+      const result = this.db.run(
+        `DELETE FROM clipboard_history WHERE is_pinned = 0 AND created_at < datetime('now', ? || ' days')`,
+        [`-${retentionDays}`],
+      );
+      totalDeleted += result?.changes ?? 0;
+    }
+
+    // Enforce maxItems cap (skip pinned)
+    if (maxItems > 0) {
+      const count = this.countAll();
+      if (count > maxItems) {
+        const excess = count - maxItems;
+        const result = this.db.run(
+          `DELETE FROM clipboard_history WHERE id IN (
+            SELECT id FROM clipboard_history WHERE is_pinned = 0 ORDER BY created_at ASC LIMIT ?
+          )`,
+          [excess],
+        );
+        totalDeleted += result?.changes ?? 0;
+      }
+    }
+
+    return totalDeleted;
+  }
 }

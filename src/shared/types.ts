@@ -45,7 +45,7 @@ export interface CleanResult {
   error?: unknown;
 }
 
-export type MaskMode = "full" | "partial" | "skip";
+export type MaskMode = "full" | "partial" | "smart" | "skip";
 
 export interface SensitiveMatch {
   type:
@@ -111,6 +111,10 @@ export interface AppSettings {
   hotkeys: {
     pasteClean: string;
     ocrCapture: string;
+    screenshotCapture?: string;
+    presetSwitch?: string;
+    ghostWrite?: string;
+    translateClipboard?: string;
     multiCopy: string;
     queueToggle: string;
     historyOpen: string;
@@ -196,11 +200,15 @@ export interface AppSettings {
     sensitiveTtlSeconds: number;
     sensitiveAllowlistApps: string[];
     enablePrivacyFirewall: boolean;
+    firewallRedactionMode: "display_only" | "mutate_clipboard";
+    autoMutateOnPublicApps: boolean;
+    mutateClipboardApps: string[];
     neverPersistSensitive: boolean;
   };
   diagnostics?: {
     observabilityEnabled: boolean;
     maxEvents: number;
+    telemetryDeviceId?: string;
   };
   recipes?: Array<{
     id: string;
@@ -214,6 +222,7 @@ export interface AppSettings {
     id: string;
     appName: string;
     contentType: ContentType;
+    fieldIntent?: string;
     suggestedPreset: string;
     confidence: number;
     count: number;

@@ -59,7 +59,6 @@ describe("Pipeline runner", () => {
 
     expect(result.cleaned).toBe("hello team [ai]");
     expect(result.appliedTransforms).toEqual([
-      "unicode-cleaner",
       "whitespace-normalizer",
       "regex-transformer",
       "ai-rewriter",
@@ -104,7 +103,7 @@ describe("Cleaner compatibility", () => {
     });
 
     expect(result.cleaned).toBe(expected);
-    expect(result.appliedTransforms).toEqual(["unicode-cleaner", "html-stripper"]);
+    expect(result.appliedTransforms).toEqual(["html-stripper"]);
   });
 
   it("keeps pdf line-break fixing behavior parity", async () => {
@@ -118,7 +117,7 @@ describe("Cleaner compatibility", () => {
     const result = await cleanContent({ text });
 
     expect(result.cleaned).toBe(fixLineBreaks(text));
-    expect(result.appliedTransforms).toEqual(["unicode-cleaner", "line-break-fixer"]);
+    expect(result.appliedTransforms).toEqual(["line-break-fixer"]);
   });
 
   it("keeps csv table conversion parity", async () => {
@@ -126,7 +125,7 @@ describe("Cleaner compatibility", () => {
     const result = await cleanContent({ text });
 
     expect(result.cleaned).toBe(toMarkdown(parseCSV(text)));
-    expect(result.appliedTransforms).toEqual(["unicode-cleaner", "table-converter"]);
+    expect(result.appliedTransforms).toEqual(["table-converter"]);
   });
 
   it("keeps tsv table conversion parity", async () => {
@@ -134,7 +133,7 @@ describe("Cleaner compatibility", () => {
     const result = await cleanContent({ text });
 
     expect(result.cleaned).toBe(toMarkdown(parseTSV(text)));
-    expect(result.appliedTransforms).toEqual(["unicode-cleaner", "table-converter"]);
+    expect(result.appliedTransforms).toEqual(["table-converter"]);
   });
 
   it("keeps html table conversion parity", async () => {
@@ -143,7 +142,7 @@ describe("Cleaner compatibility", () => {
     const result = await cleanContent({ text: "fallback", html });
 
     expect(result.cleaned).toBe(toMarkdown(parseHTMLTable(html)));
-    expect(result.appliedTransforms).toEqual(["unicode-cleaner", "table-converter"]);
+    expect(result.appliedTransforms).toEqual(["table-converter"]);
   });
 
   it("keeps default whitespace normalization parity", async () => {
@@ -151,6 +150,6 @@ describe("Cleaner compatibility", () => {
     const result = await cleanContent({ text });
 
     expect(result.cleaned).toBe(normalizeWhitespace(text));
-    expect(result.appliedTransforms).toEqual(["unicode-cleaner", "whitespace-normalizer"]);
+    expect(result.appliedTransforms).toEqual(["whitespace-normalizer"]);
   });
 });

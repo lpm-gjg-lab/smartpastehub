@@ -2,12 +2,19 @@ import { rewriteText, RewriteOptions } from "../../ai/ai-rewriter";
 import { SafeHandle } from "./contracts";
 import { getSettings } from "../settings-store";
 import { IpcDependencies } from "./contracts";
+import {
+  recordAiUsage,
+  getAiUsageSummary,
+  clearAiUsage,
+} from "../ai-usage-store";
+import { validateFetchUrl } from "../utils/url-validator";
 
 /** fetch with a 10 s hard timeout */
 async function fetchWithTimeout(
   url: string,
   init?: RequestInit,
 ): Promise<Response> {
+  validateFetchUrl(url);
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 10_000);
   try {
@@ -84,16 +91,16 @@ async function testAiConnection(
     provider === "deepseek"
       ? "https://api.deepseek.com/v1"
       : provider === "xai"
-      ? "https://api.x.ai/v1"
-      : "https://api.openai.com/v1";
+        ? "https://api.x.ai/v1"
+        : "https://api.openai.com/v1";
   const base = baseUrl.trim() ? baseUrl.replace(/\/$/, "") : defaultBase;
   const m =
     model.trim() ||
     (provider === "deepseek"
       ? "deepseek-chat"
       : provider === "xai"
-      ? "grok-3-mini"
-      : "gpt-4o-mini");
+        ? "grok-3-mini"
+        : "gpt-4o-mini");
   const res = await fetchWithTimeout(`${base}/chat/completions`, {
     method: "POST",
     headers: {
@@ -129,7 +136,6 @@ export function registerAiIpc(
       mode?: RewriteOptions["mode"];
     };
 
-    // Read stored settings to get baseUrl, model, apiKey
     const settings = await getSettings();
     const aiSettings = settings.ai;
 
@@ -142,17 +148,27 @@ export function registerAiIpc(
       model: aiSettings.model,
     };
 
-    // Always merge stored baseUrl/model/apiKey if not explicitly overridden
     if (!resolvedOptions.baseUrl) resolvedOptions.baseUrl = aiSettings.baseUrl;
     if (!resolvedOptions.model) resolvedOptions.model = aiSettings.model;
     if (!resolvedOptions.apiKey) resolvedOptions.apiKey = aiSettings.apiKey;
 
-    const rewritten = await rewriteText(text, resolvedOptions);
+    const result = await rewriteText(text, resolvedOptions);
     deps?.usageStatsRepo.incrementDaily({ aiRewrites: 1 });
-    return {
-      rewritten,
+
+    void recordAiUsage({
+      provider: resolvedOptions.provider,
+      model: resolvedOptions.model ?? aiSettings.model ?? "unknown",
       mode: resolvedOptions.mode,
-      changed: rewritten !== text,
+      promptTokens: result.usage.promptTokens,
+      completionTokens: result.usage.completionTokens,
+      totalTokens: result.usage.totalTokens,
+    });
+
+    return {
+      rewritten: result.text,
+      mode: resolvedOptions.mode,
+      changed: result.text !== text,
+      usage: result.usage,
     };
   });
 
@@ -168,14 +184,24 @@ export function registerAiIpc(
     const { text } = payload as { text: string };
     const settings = await getSettings();
     const ai = settings.ai;
-    const raw = await rewriteText(text, {
+
+    // Short-circuit when no AI provider is configured
+    if (!ai.apiKey?.trim() || (ai.provider ?? "local") === "local") {
+      return {
+        tone: "unavailable",
+        suggestion: "Configure an AI provider in Settings to detect tone.",
+      };
+    }
+
+    const result = await rewriteText(text, {
       mode: "detect_tone",
       language: (settings.general?.language as "id" | "en") ?? "en",
-      provider: (ai.provider ?? "local") as RewriteOptions["provider"],
+      provider: ai.provider as RewriteOptions["provider"],
       apiKey: ai.apiKey,
       baseUrl: ai.baseUrl,
       model: ai.model,
     });
+    const raw = result.text;
     const toneMatch = raw.match(/TONE:\s*(\S+)/i);
     const whyMatch = raw.match(/WHY:\s*(.+)/i);
     return {
@@ -186,7 +212,7 @@ export function registerAiIpc(
 
   safeHandle("ai:summarize-url", async (_, payload) => {
     const { url } = payload as { url: string };
-    // Fetch URL content then summarize via AI
+    validateFetchUrl(url);
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 15_000);
     let markdown = url;
@@ -194,15 +220,18 @@ export function registerAiIpc(
       const res = await fetch(url, { signal: controller.signal });
       if (res.ok) {
         const html = await res.text();
-        // Simple HTML-to-text strip
-        markdown = html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().slice(0, 4000);
+        markdown = html
+          .replace(/<[^>]+>/g, " ")
+          .replace(/\s+/g, " ")
+          .trim()
+          .slice(0, 4000);
       }
     } finally {
       clearTimeout(timer);
     }
     const settings = await getSettings();
     const ai = settings.ai;
-    const summary = await rewriteText(markdown, {
+    const result = await rewriteText(markdown, {
       mode: "summarize",
       language: (settings.general?.language as "id" | "en") ?? "id",
       provider: (ai.provider ?? "local") as RewriteOptions["provider"],
@@ -210,6 +239,16 @@ export function registerAiIpc(
       baseUrl: ai.baseUrl,
       model: ai.model,
     });
-    return { summary };
+    return { summary: result.text };
+  });
+
+  // ── AI Usage Stats ───────────────────────────────────────────────────────
+  safeHandle("ai:usage-stats", async () => {
+    return getAiUsageSummary();
+  });
+
+  safeHandle("ai:clear-usage", async () => {
+    await clearAiUsage();
+    return { ok: true };
   });
 }

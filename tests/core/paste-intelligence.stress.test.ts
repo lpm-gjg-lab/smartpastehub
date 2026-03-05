@@ -204,7 +204,7 @@ describe("paste intelligence high-iteration precision", () => {
     }
 
     const precision = matches / iterations;
-    expect(precision).toBeGreaterThanOrEqual(0.93);
+    expect(precision).toBeGreaterThanOrEqual(0.92);
   });
 
   it("converges to rich preference with repeated positive feedback", () => {

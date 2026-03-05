@@ -5,9 +5,10 @@ import { getSettings } from "../settings-store";
 import { detectActiveAppSignal } from "../../security/active-app-detector";
 import { evaluateContextGuard } from "../../security/context-guard";
 import { IpcDependencies, SafeHandle } from "./contracts";
-import { simulateTypeText } from "../paste-simulator";
+import { simulateTypeText, simulatePaste } from "../paste-simulator";
 import { detectSensitiveData } from "../../security/sensitive-detector";
 import { maskData } from "../../security/data-masker";
+import { expectRecord, expectString, expectOptionalString } from "./validation";
 
 export function registerClipboardIpc(
   safeHandle: SafeHandle,
@@ -17,17 +18,17 @@ export function registerClipboardIpc(
   >,
 ): void {
   safeHandle("clipboard:write", async (_, payload) => {
-    const { text } = payload as { text?: string };
-    clipboard.writeText(String(text ?? ""));
+    const rec = payload && typeof payload === "object" ? (payload as Record<string, unknown>) : {};
+    const text = String(rec["text"] ?? "");
+    clipboard.writeText(text);
     return true;
   });
 
   safeHandle("clipboard:paste", async (_, payload) => {
-    const { preset, text, html } = payload as {
-      preset: string;
-      text: string;
-      html?: string;
-    };
+    const rec = expectRecord(payload, "clipboard:paste payload");
+    const preset = expectString(rec["preset"], "preset");
+    const text = expectString(rec["text"], "text");
+    const html = expectOptionalString(rec["html"], "html") ?? undefined;
     const content = { text, html };
     const result = await cleanContent(content);
     const detected = detectContentType(content.text, content.html);
@@ -131,7 +132,9 @@ export function registerClipboardIpc(
   });
 
   safeHandle("clipboard:detect", async (_, payload) => {
-    const { text, html } = payload as { text: string; html?: string };
+    const rec = expectRecord(payload, "clipboard:detect payload");
+    const text = expectString(rec["text"], "text");
+    const html = expectOptionalString(rec["html"], "html") ?? undefined;
     return detectContentType(text, html);
   });
 
@@ -155,20 +158,42 @@ export function registerClipboardIpc(
     const maxGhostChars = 5000;
     const truncated = text.length > maxGhostChars;
     const textToType = truncated ? text.slice(0, maxGhostChars) : text;
-    const ok = simulateTypeText(textToType);
 
-    return {
-      ok,
-      message: ok
-        ? `Ghost writing ${textToType.length} chars${truncated ? " (truncated)" : ""}`
-        : "Ghost writing failed on this platform/session",
-      typedChars: textToType.length,
-      truncated,
-    };
+    // Primary: keystroke simulation (types character-by-character)
+    const ok = simulateTypeText(textToType);
+    if (ok) {
+      return {
+        ok: true,
+        message: `Ghost writing ${textToType.length} chars${truncated ? " (truncated)" : ""}`,
+        typedChars: textToType.length,
+        truncated,
+      };
+    }
+
+    // Fallback: write to clipboard and send Ctrl+V / Cmd+V
+    // This works in virtually all apps and handles focus issues gracefully.
+    try {
+      clipboard.writeText(textToType);
+      simulatePaste();
+      return {
+        ok: true,
+        message: `Ghost write used clipboard paste (${textToType.length} chars${truncated ? ", truncated" : ""})`,
+        typedChars: textToType.length,
+        truncated,
+      };
+    } catch {
+      return {
+        ok: false,
+        message: "Ghost writing failed on this platform/session",
+        typedChars: 0,
+        truncated,
+      };
+    }
   });
 
   safeHandle("clipboard:redact", async (_, payload) => {
-    const { text } = payload as { text: string };
+    const rec = expectRecord(payload, "clipboard:redact payload");
+    const text = expectString(rec["text"], "text");
     const matches = detectSensitiveData(text);
     if (matches.length === 0) {
       return { redacted: text, count: 0 };

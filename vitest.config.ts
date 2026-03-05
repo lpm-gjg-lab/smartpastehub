@@ -1,11 +1,16 @@
-import { defineConfig } from 'vitest/config';
+import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   test: {
-    environment: 'jsdom',
+    environment: "jsdom",
     globals: true,
     setupFiles: [],
-    include: ['tests/**/*.test.ts', 'tests/**/*.spec.ts'],
-    exclude: ['tests/e2e/**'],
+    include: [
+      "tests/**/*.test.ts",
+      "tests/**/*.test.tsx",
+      "tests/**/*.spec.ts",
+      "tests/**/*.spec.tsx",
+    ],
+    exclude: ["tests/e2e/**"],
   },
 });

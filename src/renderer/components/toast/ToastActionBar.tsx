@@ -35,7 +35,11 @@ export function ToastActionBar({ data, isAiLoading, copied, onAction }: Props) {
         onAction("dismiss");
         return;
       }
-      if (e.key === "Enter" && data.type === "paste_preview") {
+      if (
+        e.key === "Enter" &&
+        data.type === "paste_preview" &&
+        data.previewRequired
+      ) {
         onAction("confirm_preview");
         return;
       }
@@ -72,7 +76,7 @@ export function ToastActionBar({ data, isAiLoading, copied, onAction }: Props) {
 
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [data.type, onAction]);
+  }, [data.previewRequired, data.type, onAction]);
 
   if (
     data.type === "bypass_mode" ||
@@ -82,25 +86,31 @@ export function ToastActionBar({ data, isAiLoading, copied, onAction }: Props) {
     return null;
   }
 
-  if (data.type === "paste_preview") {
+  if (data.type === "paste_preview" && data.previewRequired) {
     return (
       <div className={styles.actions}>
         <button
+          type="button"
           className={styles.actionBtn}
           onClick={() => onAction("confirm_preview")}
           aria-label="Confirm preview and paste cleaned result"
         >
-          ✅ Confirm Paste
+          Confirm Paste
         </button>
         <button
+          type="button"
           className={styles.actionBtn}
           onClick={() => onAction("cancel_preview")}
           aria-label="Cancel preview"
         >
-          ✖ Cancel
+          Cancel
         </button>
       </div>
     );
+  }
+
+  if (data.type === "paste_preview") {
+    return null;
   }
 
   if (
@@ -112,13 +122,14 @@ export function ToastActionBar({ data, isAiLoading, copied, onAction }: Props) {
       <div className={styles.actions}>
         {data.paletteOptions.slice(0, 8).map((option, index) => (
           <button
+            type="button"
             key={option}
             className={styles.actionBtn}
             onClick={() => onAction(`palette_select:${option}`)}
             aria-label={`Use preset ${option}`}
             data-action-index={index}
           >
-            {data.paletteSelected === option ? "✓ " : ""}
+            {data.paletteSelected === option ? "Selected: " : ""}
             {option}
           </button>
         ))}
@@ -126,23 +137,33 @@ export function ToastActionBar({ data, isAiLoading, copied, onAction }: Props) {
     );
   }
 
-  // Sensitive data warning — offer "Show anyway" or "Keep masked"
+  // Sensitive data warning — offer paste actions and cancel
   if (data.type === "sensitive_warning") {
     return (
       <div className={styles.actions}>
         <button
+          type="button"
           className={styles.actionBtn}
-          onClick={() => onAction("use_original")}
-          aria-label="Show original unmasked text"
+          onClick={() => onAction("paste_as_is")}
+          aria-label="Paste text without masking"
         >
-          👁 Show anyway
+          Paste
         </button>
         <button
+          type="button"
           className={styles.actionBtn}
-          onClick={() => onAction("copy")}
-          aria-label="Copy masked text to clipboard"
+          onClick={() => onAction("mask_and_paste")}
+          aria-label="Mask sensitive data then paste"
         >
-          {copied ? "✓ Copied" : "Keep masked"}
+          Paste with Masking
+        </button>
+        <button
+          type="button"
+          className={styles.actionBtn}
+          onClick={() => onAction("dismiss")}
+          aria-label="Cancel paste operation"
+        >
+          Cancel
         </button>
       </div>
     );
@@ -157,6 +178,7 @@ export function ToastActionBar({ data, isAiLoading, copied, onAction }: Props) {
     return (
       <div className={styles.actions}>
         <button
+          type="button"
           className={styles.actionBtn}
           onClick={() => onAction("undo")}
           disabled={isAiLoading}
@@ -166,39 +188,43 @@ export function ToastActionBar({ data, isAiLoading, copied, onAction }: Props) {
           ↩ Undo
         </button>
         <button
+          type="button"
           className={styles.actionBtn}
           onClick={() => onAction("copy")}
           disabled={isAiLoading}
           aria-label="Copy cleaned text"
         >
-          {copied ? "✓ Copied" : "Copy"}
+          {copied ? "Copied" : "Copy"}
         </button>
         <button
+          type="button"
           className={styles.actionBtn}
           onClick={() => onAction("feedback_good")}
           disabled={isAiLoading}
           aria-label="Feedback: current format is correct"
           title="Learn only; keep this format"
         >
-          👍 Benar
+          Correct
         </button>
         <button
+          type="button"
           className={styles.actionBtn}
           onClick={() => onAction(`feedback_learn:${oppositeIntent}`)}
           disabled={isAiLoading}
           aria-label="Feedback: adjust next time only"
           title="Learn only; apply on next paste"
         >
-          🧠 Learn Only
+          Learn Only
         </button>
         <button
+          type="button"
           className={styles.actionBtn}
           onClick={() => onAction(`feedback_fix_now:${oppositeIntent}`)}
           disabled={isAiLoading}
           aria-label="Feedback: fix now and reapply paste"
           title="Learn and reapply now"
         >
-          🛠 Fix Now
+          Fix Now
         </button>
       </div>
     );
@@ -215,6 +241,7 @@ export function ToastActionBar({ data, isAiLoading, copied, onAction }: Props) {
 
     return (
       <button
+        type="button"
         key={`${action}-${currentIndex}`}
         className={styles.actionBtn}
         onClick={() => onAction(action)}
@@ -234,39 +261,39 @@ export function ToastActionBar({ data, isAiLoading, copied, onAction }: Props) {
       case "math_expression":
         return renderActionButton(
           "calculate",
-          "🧮 Calculate",
+          "Calculate Expression",
           "Calculate mathematical expression",
         );
       case "color_code":
         return renderActionButton(
           "convert_color",
-          "🎨 Convert Format",
+          "Convert Color Format",
           "Convert color format",
         );
       case "path_text":
         return renderActionButton(
           "extract_file",
-          "📄 Extract Content",
+          "Extract Content",
           "Extract file content",
         );
       case "url_text":
         return renderActionButton(
           "scrape_url",
-          isAiLoading ? "🕸️ Scraping..." : "🕸️ Scrape Article",
+          isAiLoading ? "Scraping..." : "Scrape Article",
           "Extract article content from URL",
           { title: "Convert article to markdown" },
         );
       case "md_text":
         return renderActionButton(
           "convert_md",
-          "📝 Make Rich Text",
+          "Convert to Rich Text",
           "Convert markdown to rich text",
           { title: "Convert to rich text" },
         );
       case "text_with_links":
         return renderActionButton(
           "open_links",
-          "🔗 Open Links",
+          "Open Links",
           "Extract and open links",
           { title: "Extract and open links" },
         );
@@ -332,7 +359,11 @@ export function ToastActionBar({ data, isAiLoading, copied, onAction }: Props) {
           return (
             <>
               {smartActions.map(({ action, label, icon }) =>
-                renderActionButton(action, `${icon} ${label}`, label),
+                renderActionButton(
+                  action,
+                  icon ? `${icon} ${label}` : label,
+                  label,
+                ),
               )}
             </>
           );
@@ -342,33 +373,33 @@ export function ToastActionBar({ data, isAiLoading, copied, onAction }: Props) {
           <>
             {renderActionButton(
               "save_snippet",
-              "💾 Save Snippet",
+              "Save Snippet",
               "Save copied text as snippet",
             )}
             {renderActionButton(
               "make_secret",
-              isAiLoading ? "Encrypting..." : "💣 Secret Link",
+              isAiLoading ? "Encrypting..." : "Create Secret Link",
               "Create one-time secret link",
               { title: "Create one-time secret link" },
             )}
             {renderActionButton(
               "fix_grammar",
-              isAiLoading ? "✨ Thinking..." : "✅ Fix Grammar",
+              isAiLoading ? "Thinking..." : "Fix Grammar",
               "Fix grammar",
             )}
             {renderActionButton(
               "rephrase",
-              isAiLoading ? "✨ Thinking..." : "🔄 Rephrase",
+              isAiLoading ? "Thinking..." : "Rephrase Text",
               "Rephrase text",
             )}
             {renderActionButton(
               "formalize",
-              isAiLoading ? "✨ Thinking..." : "👔 Formalize",
+              isAiLoading ? "Thinking..." : "Formalize Text",
               "Rewrite text in formal tone",
             )}
             {renderActionButton(
               "summarize",
-              isAiLoading ? "✨ Thinking..." : "📝 Summarize",
+              isAiLoading ? "Thinking..." : "Summarize Text",
               "Summarize text",
             )}
           </>
@@ -382,8 +413,8 @@ export function ToastActionBar({ data, isAiLoading, copied, onAction }: Props) {
       {renderContextButtons()}
       {renderActionButton(
         "UPPERCASE",
-        copied ? "Copied!" : "UPPERCASE",
-        "Convert result to uppercase",
+        copied ? "Copied" : "Convert to Uppercase",
+        "Convert text to uppercase",
       )}
     </div>
   );

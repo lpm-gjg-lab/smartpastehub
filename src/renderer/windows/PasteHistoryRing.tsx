@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { invokeIPC } from "../lib/ipc";
+import { Cross2Icon } from "@radix-ui/react-icons";
 
 interface StackItem {
   id: number;
@@ -11,14 +13,22 @@ interface StackItem {
   timestamp: number;
 }
 
-function timeAgo(ts: number): string {
+function timeAgo(
+  ts: number,
+  t: (key: string, options?: Record<string, unknown>) => string,
+): string {
   const diff = Date.now() - ts;
-  if (diff < 60_000) return `${Math.floor(diff / 1000)}s ago`;
-  if (diff < 3_600_000) return `${Math.floor(diff / 60_000)}m ago`;
-  return `${Math.floor(diff / 3_600_000)}h ago`;
+  if (diff < 60_000) {
+    return t("window.ring.seconds_ago", { count: Math.floor(diff / 1000) });
+  }
+  if (diff < 3_600_000) {
+    return t("window.ring.minutes_ago", { count: Math.floor(diff / 60_000) });
+  }
+  return t("window.ring.hours_ago", { count: Math.floor(diff / 3_600_000) });
 }
 
 export default function PasteHistoryRing() {
+  const { t } = useTranslation();
   const [items, setItems] = useState<StackItem[]>([]);
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState(0);
@@ -47,7 +57,7 @@ export default function PasteHistoryRing() {
   }, []);
 
   const handleKeyDown = useCallback(
-    async (e: React.KeyboardEvent) => {
+    async (e: KeyboardEvent) => {
       if (e.key === "ArrowDown") {
         setSelected((s) => Math.min(s + 1, items.length - 1));
       } else if (e.key === "ArrowUp") {
@@ -57,7 +67,8 @@ export default function PasteHistoryRing() {
         if (item) await invokeIPC("ring:select", item.id);
       } else if (e.key === "o" || e.key === "O") {
         const item = items[selected];
-        if (item?.hasBeenCleaned) await invokeIPC("ring:select-original", item.id);
+        if (item?.hasBeenCleaned)
+          await invokeIPC("ring:select-original", item.id);
       } else if (e.key === "Escape") {
         window.close();
       } else if (e.key === "Delete") {
@@ -71,6 +82,16 @@ export default function PasteHistoryRing() {
     [items, selected, loadItems],
   );
 
+  useEffect(() => {
+    const listener = (e: KeyboardEvent) => {
+      void handleKeyDown(e);
+    };
+    window.addEventListener("keydown", listener);
+    return () => {
+      window.removeEventListener("keydown", listener);
+    };
+  }, [handleKeyDown]);
+
   const handlePin = async (id: number) => {
     await invokeIPC("ring:pin", id);
     void loadItems();
@@ -81,9 +102,10 @@ export default function PasteHistoryRing() {
 
   return (
     <div
-      onKeyDown={handleKeyDown}
+      className="window-drag-region"
       style={{
-        width: 320,
+        width: "100%",
+        height: "100%",
         maxHeight: 400,
         background: "var(--bg-tertiary)",
         backdropFilter: "blur(12px)",
@@ -97,8 +119,36 @@ export default function PasteHistoryRing() {
         overflow: "hidden",
       }}
     >
+      {/* Header with close button */}
+      <div
+        style={{
+          padding: "8px 12px",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          borderBottom: "1px solid var(--border-subtle)",
+        }}
+      >
+        <span style={{ fontSize: 13, fontWeight: 600 }}>History Ring</span>
+        <button
+          type="button"
+          className="window-no-drag"
+          onClick={() => window.close()}
+          aria-label="Close window"
+          style={{
+            background: "transparent",
+            border: "none",
+            color: "var(--text-secondary)",
+            cursor: "pointer",
+            fontSize: 16,
+          }}
+        >
+          <Cross2Icon />
+        </button>
+      </div>
       {/* Search bar */}
       <div
+        className="window-no-drag"
         style={{
           padding: "8px 10px",
           borderBottom: "1px solid var(--border-subtle)",
@@ -108,7 +158,7 @@ export default function PasteHistoryRing() {
           ref={searchRef}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search clipboard…"
+          placeholder={t("window.ring.search_placeholder")}
           style={{
             width: "100%",
             background: "var(--glass-bg-hover)",
@@ -122,9 +172,8 @@ export default function PasteHistoryRing() {
           }}
         />
       </div>
-
       {/* Items list */}
-      <div style={{ overflowY: "auto", flex: 1 }}>
+      <div className="window-no-drag" style={{ overflowY: "auto", flex: 1 }}>
         {items.length === 0 && (
           <div
             style={{
@@ -134,14 +183,12 @@ export default function PasteHistoryRing() {
               fontSize: 13,
             }}
           >
-            No items
+            {t("window.ring.no_items")}
           </div>
         )}
         {items.map((item, idx) => (
           <div
             key={item.id}
-            onClick={() => setSelected(idx)}
-            onDoubleClick={() => void invokeIPC("ring:select", item.id)}
             style={{
               padding: "8px 12px",
               cursor: "pointer",
@@ -153,7 +200,21 @@ export default function PasteHistoryRing() {
               gap: 8,
             }}
           >
-            <div style={{ flex: 1, minWidth: 0 }}>
+            <button
+              type="button"
+              onClick={() => setSelected(idx)}
+              onDoubleClick={() => void invokeIPC("ring:select", item.id)}
+              style={{
+                flex: 1,
+                minWidth: 0,
+                background: "transparent",
+                border: "none",
+                color: "inherit",
+                padding: 0,
+                textAlign: "left",
+                cursor: "pointer",
+              }}
+            >
               <div
                 style={{
                   fontSize: 12,
@@ -165,7 +226,7 @@ export default function PasteHistoryRing() {
                 {preview(item.content)}
                 {item.hasBeenCleaned && (
                   <span
-                    title={`Original: ${item.originalText.slice(0, 120)}${item.originalText.length > 120 ? "…" : ""}`}
+                    title={`${t("window.ring.original_prefix")}: ${item.originalText.slice(0, 120)}${item.originalText.length > 120 ? "…" : ""}`}
                     style={{
                       marginLeft: 5,
                       fontSize: 9,
@@ -178,20 +239,21 @@ export default function PasteHistoryRing() {
                       cursor: "help",
                     }}
                   >
-                    cleaned
+                    {t("window.ring.cleaned_badge")}
                   </span>
                 )}
               </div>
               <div style={{ fontSize: 10, opacity: 0.5, marginTop: 2 }}>
-                {item.contentType} · {timeAgo(item.timestamp)}
+                {item.contentType} · {timeAgo(item.timestamp, t)}
               </div>
-            </div>
+            </button>
             <button
+              type="button"
               onClick={(e) => {
                 e.stopPropagation();
                 void handlePin(item.id);
               }}
-              title="Pin to top"
+              title={t("window.ring.pin_to_top")}
               style={{
                 background: "none",
                 border: "none",
@@ -201,7 +263,7 @@ export default function PasteHistoryRing() {
                 padding: "2px 4px",
               }}
             >
-              📌
+              Pin
             </button>
           </div>
         ))}
@@ -216,7 +278,7 @@ export default function PasteHistoryRing() {
           borderTop: "1px solid var(--border-subtle)",
         }}
       >
-        ↑↓ navigate · Enter paste cleaned · O paste original · Del remove · Esc close
+        {t("window.ring.footer_hint")}
       </div>
     </div>
   );

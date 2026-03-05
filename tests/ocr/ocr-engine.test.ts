@@ -41,7 +41,14 @@ describe("OCR engine", () => {
       confidence_threshold: 0.5,
     });
 
-    expect(recognize).toHaveBeenCalledWith(expect.any(Buffer), "eng+ind");
+    expect(recognize).toHaveBeenCalledWith(
+      expect.any(Buffer),
+      "eng+ind",
+      expect.objectContaining({
+        logger: expect.any(Function),
+        errorHandler: expect.any(Function),
+      }),
+    );
     expect(result).toEqual({
       text: "Hello OCR",
       confidence: 0.87,
@@ -78,7 +85,14 @@ describe("OCR engine", () => {
       psm: 6,
     });
 
-    expect(recognize).toHaveBeenCalledWith("/tmp/image.png", "eng");
+    expect(recognize).toHaveBeenCalledWith(
+      "/tmp/image.png",
+      "eng",
+      expect.objectContaining({
+        logger: expect.any(Function),
+        errorHandler: expect.any(Function),
+      }),
+    );
     expect(result.blocks).toEqual([{ text: "Keep", confidence: 0.81 }]);
   });
 
@@ -108,11 +122,19 @@ describe("OCR engine", () => {
       1,
       expect.any(Buffer),
       "jpn+eng",
+      expect.objectContaining({
+        logger: expect.any(Function),
+        errorHandler: expect.any(Function),
+      }),
     );
     expect(vi.mocked(recognize)).toHaveBeenNthCalledWith(
       2,
       expect.any(Buffer),
       "eng",
+      expect.objectContaining({
+        logger: expect.any(Function),
+        errorHandler: expect.any(Function),
+      }),
     );
     expect(result.warning).toBe("OCR fallback used: English model only");
   });
