@@ -20,7 +20,10 @@ out/
 /reg-output.txt
 /test-output.json
 /nul
-
+tests/
+release/
+release_new/
+release_prod/
 # AI-generated resolved artifact files
 *.resolved
 *.md.resolved
